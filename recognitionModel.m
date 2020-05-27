@@ -34,81 +34,87 @@ classdef recognitionModel
         
         
         
-        function [X, Y] = getTotalXnYByUser(obj)
+       function [X, Y] = getTotalXnYByUser(obj)
+       % This function reads the time series (X) and the labels (Y) of the user
+       % "username", stored in the forlder "pathname", corresponding to "training"
+       % or "testing" (i.e., value of variable "version") and the gestures 
+       % indicated in the cell "gestures"
+                      
+            if (strcmp('training',obj.version) == 1)
 
+                sampleType = 'trainingSamples';
 
-        if (strcmp('training',obj.version) == 1)
+            elseif (strcmp('testing',obj.version) == 1)
 
-            sampleType = 'trainingSamples';
+                sampleType = 'testingSamples';
 
-        elseif (strcmp('testing',obj.version) == 1)
-
-            sampleType = 'testingSamples';
-
-        end
-
-
-        numClasses = length(obj.gesture);
-        X = cell(1, numClasses);
-        Y = cell(1, numClasses);
-        
-        for class_i = 1:numClasses
-            
-            typeGesture = obj.gesture{class_i};
-            gestureData = obj.user.(sampleType).(typeGesture);
-            
-            switch typeGesture
-                case 'noGesture'
-                    code = 1;
-                case 'fist'
-                    code = 2;
-                case 'waveIn'
-                    code = 3;
-                case 'waveOut'
-                    code = 4;
-                case 'open'
-                    code = 5;
-                case 'pinch'
-                    code = 6;
             end
 
-            
-            numTrialsForEachGesture = length(fieldnames(gestureData));
-            x = cell(1, numTrialsForEachGesture);
-            y = cell(1, numTrialsForEachGesture);
-            
 
-            for i_emg = 1:numTrialsForEachGesture
+            numClasses = length(obj.gesture);
+            X = cell(1, numClasses);
+            Y = cell(1, numClasses);
+        
+            for class_i = 1:numClasses
 
-                sampleNum = sprintf('sample%d',i_emg);
-                emgSample = gestureData.(sampleNum).emg;
+                typeGesture = obj.gesture{class_i};
+                gestureData = obj.user.(sampleType).(typeGesture);
 
-                EMG = [];
-
-                for ch = 1:8               
-                    channel = sprintf('ch%d',ch); 
-                    EMG(:,ch) = emgSample.(channel);
+                switch typeGesture
+                    case 'noGesture'
+                        code = 1;
+                    case 'fist'
+                        code = 2;
+                    case 'waveIn'
+                        code = 3;
+                    case 'waveOut'
+                        code = 4;
+                    case 'open'
+                        code = 5;
+                    case 'pinch'
+                        code = 6;
                 end
 
-                [samples, ~] = size(EMG);
-                % GET X
-                x{i_emg} = EMG;
 
-                % GET Y
-                y{i_emg} = repmat(code, samples, 1);
+                numTrialsForEachGesture = length(fieldnames(gestureData));
+                x = cell(1, numTrialsForEachGesture);
+                y = cell(1, numTrialsForEachGesture);
+
+
+                for i_emg = 1:numTrialsForEachGesture
+
+                    sampleNum = sprintf('sample%d',i_emg);
+                    emgSample = gestureData.(sampleNum).emg;
+
+                    EMG = [];
+
+                    for ch = 1:8               
+                        channel = sprintf('ch%d',ch); 
+                        EMG(:,ch) = emgSample.(channel);
+                    end
+
+                    [samples, ~] = size(EMG);
+                    % GET X
+                    x{i_emg} = EMG;
+
+                    % GET Y
+                    y{i_emg} = repmat(code, samples, 1);
+                end
+
+
+                X{class_i} = x;
+                Y{class_i} = y;
+
             end
-            
-           
-            X{class_i} = x;
-            Y{class_i} = y;
-            
-        end
 
         end
         
 
         
         function emg_out = preProcessEMG(obj,emg_in)
+        % This function pre-process an EMG by applying normalization to tne range
+        % [-1, 1] if needed, rectification, low-pass filtering, and segmentation of
+        % the region of the EMG corresponding to a muscle contraction    
             
             options = obj.options;
    
@@ -190,7 +196,9 @@ classdef recognitionModel
         
         
         function [train_XOut, trainYOut] = makeSingleSet(obj,train_XIn, train_YIn)
-
+        % This function puts the EMGs of each class from the set train_XIn in a 
+        % single set train_XOut. Additionally, this function also puts in single
+        % vector trainYOut the labels from the set train_YIn
 
             numClasses = size(train_XIn, 2);
             numTrialsPerClass = size(train_XIn{1}, 2);
@@ -217,6 +225,10 @@ classdef recognitionModel
         
         
         function centers = findCentersOfEachClass(obj, timeSeries, dataY)
+        % This function returns a set of time series called centers. The ith
+        % time series of centers, centers{i}, is the center of the cluster of time 
+        % series from the set timeSeries that belong to the ith class. For finding
+        % the center of each class, the DTW distance is used.
             
             options = obj.options;
             
@@ -252,6 +264,19 @@ classdef recognitionModel
         
         
         function plotClusters(timeSeries, clusters, centers)
+        % This function plots the clusters generated from a set of time series
+        %
+        % Inputs:
+        %
+        %        - timeSeries: [Nx1] cell, where each element of the cell is a time
+        %                      serie
+        %          - clusters: [Nx1] vector containing the number of group to which
+        %                      each element of the cell timeSeries belongs to. Each
+        %                      element of this vector is a number in the set
+        %                      {1, 2, ...,c}, where c denotes the number of
+        %                      clusters
+        %           - centers: [1*c] cell containing the indices in the cell timeSeries
+        %                      of the series that act as center of each cluster
 
             numTimeSeries = length(timeSeries);
             listOfSeries = 1:numTimeSeries;
@@ -293,6 +318,12 @@ classdef recognitionModel
         
         
         function dataX = featureExtraction(obj, timeSeries, centers)
+        % This function computes a feature vector for each element from the set
+        % timeSeries. The dimension of this feature vector depends on the number of 
+        % time series of the set centers. The value of the jth feature of the ith
+        % vector in dataX corresponds to the DTW distance between the signals 
+        % timeSeries{i} and centers{j}.           
+            
             options = obj.options;    
             numTimeSeries = length(timeSeries);
             numClusters = length(centers);
@@ -311,6 +342,16 @@ classdef recognitionModel
         
         
         function struct = preProcessFeatureVectors(obj, dataX_in)
+        % This function preprocess each feature vector of the set dataX_in. Each
+        % row of dataX_in is a fetaure vector and each column is a feature.
+        % The preprocessing that can be applied to a feature vector include the 
+        % following options:
+        %
+        % vector:   Standardizes the values of a vector
+        % feature:  Standardizes the features of a set of vectors
+        % minmax:   Normalizes the features by subtracting the minimum and dividing
+        %           by the maximum of each feature
+        % none:     No pre-processing of the feature vectors
         
             metaParameters =obj.options;
             typePreprocessing = metaParameters.typePreprocessingFeatVector;
@@ -346,7 +387,8 @@ classdef recognitionModel
 
 
         function weights = trainSoftmaxNN(obj,dataX,dataY)
-            
+
+        
             metaParameters = obj.options;
             numNeuronsLayers = obj.numNeuronsLayers;
             
@@ -410,6 +452,14 @@ classdef recognitionModel
         
         
         function [predicted_Y, actual_Y, time, vectorTimePoints] = classifyEMG_SegmentationNN(obj, test_X, test_Y, nnModel)
+       
+        % This function applies a hand gesture recognition model based on artificial
+        % feed-forward neural networks and automatic feature extraction to a set of
+        % EMGs conatined in the set test_X. The actual label of each EMG in test_X
+        % is in the set test_Y. The structure nnModel contains the trained neural
+        % network              
+            
+            
             options = obj.options;  
     
             % Settings for pre-processing
@@ -555,6 +605,10 @@ classdef recognitionModel
         
 
         function [predictedLabels, actualLabels, time] = posProcessLabels(obj,predictedSeq, actualSeq)
+        % This function post-processes the sequence of labels returned by a
+        % classifier. Each row of predictedSeq{class_i}{example_j} is a sequence of 
+        % labels predicted by a different classifier for the jth example belonging
+        % to the ith actual class.
 
         numClasses = length(predictedSeq);
         predictedLabels = [];
@@ -625,6 +679,9 @@ classdef recognitionModel
         
         
         function totalTime = computeTime(obj, timeClassification, timePosprocessing)
+        % This function computes the total time of processing of each window
+        % observation. For this task, this function adds up all the times of
+        % processing of the different modules that compose a recognition model
 
 
             numClasses = length(timeClassification);
@@ -644,7 +701,7 @@ classdef recognitionModel
         
         
         function plotConfusionMatrix(obj,predictions,targets,time)
-            
+        % Plot confusion matrix    
             listOfClassifiers = {'NN Model'};
             [numClassifiers, N] = size(predictions);
             numClasses = length(obj.gesture);
