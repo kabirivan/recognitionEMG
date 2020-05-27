@@ -6,7 +6,6 @@ addpath('Preprocessing');
 addpath('Segmentation');
 addpath('DTW distance');
 addpath('TrainingModel');
-addpath('Feature extraction');
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 predictions = [];
 recognition = [];
