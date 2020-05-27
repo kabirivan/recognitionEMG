@@ -8,7 +8,6 @@ addpath('DTW distance');
 addpath('TrainingModel');
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 predictions = [];
-recognition = [];
 targets = [];
 time = [];
 
