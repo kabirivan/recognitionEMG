@@ -1,0 +1,682 @@
+classdef recognitionModel
+    %UNTITLED12 Summary of this class goes here
+    %   Detailed explanation goes here
+    
+    properties
+        user
+        version
+        gesture
+        options
+        numLabels
+        dataX
+        dataY
+        numNeuronsLayers 
+        transferFunctions
+        
+    end
+    
+    methods
+        function obj = recognitionModel(user,version,gesture,options)
+            
+            obj.user = user;
+            obj.version = version;
+            obj.gesture = gesture;
+            obj.options = options;
+            obj.numLabels = length(obj.gesture);
+            obj.numNeuronsLayers = [length(gesture) length(gesture) length(gesture)];
+            obj.transferFunctions{1} = 'none'; % Input
+            obj.transferFunctions{2} = 'tanh'; % Hidden
+            obj.transferFunctions{3} = 'softmax'; % Output
+             
+ 
+        end
+        
+        
+        
+        
+        function [X, Y] = getTotalXnYByUser(obj)
+
+
+        if (strcmp('training',obj.version) == 1)
+
+            sampleType = 'trainingSamples';
+
+        elseif (strcmp('testing',obj.version) == 1)
+
+            sampleType = 'testingSamples';
+
+        end
+
+
+        numClasses = length(obj.gesture);
+        X = cell(1, numClasses);
+        Y = cell(1, numClasses);
+        
+        for class_i = 1:numClasses
+            
+            typeGesture = obj.gesture{class_i};
+            gestureData = obj.user.(sampleType).(typeGesture);
+            
+            switch typeGesture
+                case 'noGesture'
+                    code = 1;
+                case 'fist'
+                    code = 2;
+                case 'waveIn'
+                    code = 3;
+                case 'waveOut'
+                    code = 4;
+                case 'open'
+                    code = 5;
+                case 'pinch'
+                    code = 6;
+            end
+
+            
+            numTrialsForEachGesture = length(fieldnames(gestureData));
+            x = cell(1, numTrialsForEachGesture);
+            y = cell(1, numTrialsForEachGesture);
+            
+
+            for i_emg = 1:numTrialsForEachGesture
+
+                sampleNum = sprintf('sample%d',i_emg);
+                emgSample = gestureData.(sampleNum).emg;
+
+                EMG = [];
+
+                for ch = 1:8               
+                    channel = sprintf('ch%d',ch); 
+                    EMG(:,ch) = emgSample.(channel);
+                end
+
+                [samples, ~] = size(EMG);
+                % GET X
+                x{i_emg} = EMG;
+
+                % GET Y
+                y{i_emg} = repmat(code, samples, 1);
+            end
+            
+           
+            X{class_i} = x;
+            Y{class_i} = y;
+            
+        end
+
+        end
+        
+
+        
+        function emg_out = preProcessEMG(obj,emg_in)
+            
+            options = obj.options;
+   
+            Fa = options.Fa;
+            Fb = options.Fb;
+            rectFcn = options.rectFcn;
+            plotSignals = options.plotSignals;
+            numClasses = length(emg_in);
+            emg_out = emg_in;
+            for class_i = 1:numClasses
+                raw_emg_class_i = emg_in{class_i};
+                numTrials_class_i = length(raw_emg_class_i);
+                filtered_emg_class_i = raw_emg_class_i;
+                for trial_j = 1:numTrials_class_i
+                    raw_emg_class_i__trial_j = raw_emg_class_i{trial_j};
+                    filteredEMG = preProcessEMGSegment(raw_emg_class_i__trial_j, Fa, Fb, rectFcn);
+
+                    if options.Segmentation
+                        % This part of the code performs segmentation
+                        % Parameters for EMG segmentation
+                        FaSegmentation = options.FaSegmentation;
+                        FbSegmentation = options.FbSegmentation;
+                        rectFcnSegmentation = options.rectFcnSegmentation;
+                        filtEMG = preProcessEMGSegment(raw_emg_class_i__trial_j,...
+                            FaSegmentation, FbSegmentation, rectFcnSegmentation);
+                        [idxStart, idxEnd] = detectMuscleActivity(filtEMG, options);
+                    else
+                        % If the segmentation is not used
+                        idxStart = 1;
+                        idxEnd = size(filteredEMG, 1);
+                    end
+                    filtered_emg_class_i{trial_j} = filteredEMG(idxStart:idxEnd, :);
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                    if plotSignals
+                        figure(3);
+                        f = gcf;
+                        set(f, 'Name', ['Class: ' num2str(class_i) ', Trial: ' num2str(trial_j)]);
+                        numChannels = size(raw_emg_class_i__trial_j, 2);
+                        for c = 1:numChannels
+                            subplot(4, 2, c);
+                            if max( abs(raw_emg_class_i__trial_j(:, c)) ) > 1
+                                raw_emg_class_i__trial_j(:, c) = raw_emg_class_i__trial_j(:, c)/128;
+                            end
+                            plot(raw_emg_class_i__trial_j(:, c), 'r');
+                            hold all;
+                            plot(filteredEMG(:, c), 'k');
+                            plot([1 idxStart idxStart idxEnd idxEnd size(raw_emg_class_i__trial_j, 1)],...
+                                [0 0 1 1 0 0], 'b', 'linewidth', 2);
+                            hold off;
+                            ylim([-1 1]);
+                            title(['CH: ' num2str(c)]);
+                        end
+                        hold off;
+                        drawnow;
+                        figure(4);
+                        f = gcf;
+                        set(f, 'Name', ['Class: ' num2str(class_i) ', Trial: ' num2str(trial_j)]);
+                        subplot(2, 1, 1);
+                        imagesc(raw_emg_class_i__trial_j', [-1, 1]);
+                        colormap jet;
+                        colorbar;
+                        title('Raw EMG');
+                        subplot(2, 1, 2);
+                        imagesc(filteredEMG', [-1, 1]);
+                        colormap jet;
+                        colorbar;
+                        title('Filtered EMG');
+                        drawnow;
+                        fprintf('Press ENTER to continue\n');
+                        pause;
+                    end
+                    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                end
+                emg_out{class_i} = filtered_emg_class_i;
+            end
+
+        end 
+        
+        
+        
+        function [train_XOut, trainYOut] = makeSingleSet(obj,train_XIn, train_YIn)
+
+
+            numClasses = size(train_XIn, 2);
+            numTrialsPerClass = size(train_XIn{1}, 2);
+            numSamples = numClasses*numTrialsPerClass;
+            train_XOut = cell(numSamples, 1); trainYOut = nan(numSamples, 1);
+            cont = 0;
+            for class_i = 1:numClasses
+                numTrials_class_i = size(train_XIn{class_i}, 2);
+                train_XIn_class_i = train_XIn{class_i};
+                train_YIn_class_i = train_YIn{class_i};
+                for trial_j = 1:numTrials_class_i
+                    trainXIn_class_i_trial_j = train_XIn_class_i{trial_j};
+                    trainYIn_class_i_trial_j = train_YIn_class_i{trial_j};
+
+                    cont = cont + 1;
+                    train_XOut{cont, 1} = trainXIn_class_i_trial_j;
+                    trainYOut(cont, 1) = mode(trainYIn_class_i_trial_j);
+                end
+            end
+            train_XOut = train_XOut(1:cont, 1); 
+            trainYOut = trainYOut(1:cont, 1);
+        end
+       
+        
+        
+        function centers = findCentersOfEachClass(obj, timeSeries, dataY)
+            
+            options = obj.options;
+            
+            numTimeSeries = length(timeSeries);
+            listOfSeries = 1:numTimeSeries;
+            classes = unique(dataY);
+            numClasses = length(classes);
+            centers = cell(1, numClasses);
+            w = options.dtwWindow;
+            for class_i = 1:numClasses
+                idxSeries_class_i = listOfSeries(dataY == class_i);
+                numIdxSeries_class_i = length(idxSeries_class_i);
+                mtxDistances_class_i = zeros(numIdxSeries_class_i, numIdxSeries_class_i);
+                for serie_j = 1:numIdxSeries_class_i
+                    serie_class_i_idx_j = timeSeries{ idxSeries_class_i(serie_j) };
+                    for serie_k = 1:numIdxSeries_class_i
+                        serie_class_i_idx_k = timeSeries{ idxSeries_class_i(serie_k) };
+                        if serie_k > serie_j
+                            dist = dtw_c( serie_class_i_idx_j, serie_class_i_idx_k, w );
+                            mtxDistances_class_i(serie_j, serie_k) = dist;
+                            mtxDistances_class_i(serie_k, serie_j) = dist;
+                        end
+                    end
+                end
+                vectDistances_class_i = sum(mtxDistances_class_i);
+                [dummy, idx] = min(vectDistances_class_i);
+                centerIdx = idxSeries_class_i(idx);
+                centers{class_i} = timeSeries{ centerIdx };
+            end
+        end
+        
+        
+        
+        
+        function plotClusters(timeSeries, clusters, centers)
+
+            numTimeSeries = length(timeSeries);
+            listOfSeries = 1:numTimeSeries;
+            numCols = 2;
+            numClusters = length(centers);
+            numRows = ceil(numClusters/numCols);
+            for cluster_i = 1:numClusters
+            IdxSeries_cluster_i = listOfSeries(clusters == cluster_i);
+            numSeries_cluster_i = length(IdxSeries_cluster_i);
+            for serie_j = 1:numSeries_cluster_i
+                cluster_i_serie_j = timeSeries{IdxSeries_cluster_i(serie_j)};
+                numChannels = size(cluster_i_serie_j, 2);
+                for channel_k = 1:numChannels
+                    figure(channel_k);
+                    set(gcf, 'Name', ['Channel ' num2str(channel_k),...
+                        '. Cluster centers are drawn with a ticker line']);
+                    subplot(numCols, numRows, cluster_i);
+                    plot(cluster_i_serie_j(:, channel_k), 'linewidth', 1);
+                    ylim([-1, 1]);
+                    if serie_j == 1
+                        hold all;
+                    end
+                    title(['Cluster ' num2str(cluster_i)])
+                end
+            end
+            numChannels = size( centers{cluster_i}, 2);
+            for channel_k = 1:numChannels
+                figure(channel_k);
+                subplot(numCols, numRows, cluster_i);
+                hold all;
+                plot(centers{cluster_i}(:, channel_k), 'linewidth', 2);
+            end
+            end
+            hold off;
+            drawnow;
+        end
+        
+        
+        
+        
+        function dataX = featureExtraction(obj, timeSeries, centers)
+            options = obj.options;    
+            numTimeSeries = length(timeSeries);
+            numClusters = length(centers);
+            w = options.dtwWindow;
+            dataX = nan(numTimeSeries, numClusters);
+            for serie_i = 1:numTimeSeries
+                timeSerie_i = timeSeries{ serie_i };
+                for center_j = 1:numClusters
+                    center_cluster_j = centers{ center_j };
+                    distance = dtw_c( timeSerie_i, center_cluster_j, w );
+                    dataX(serie_i, center_j) = distance;
+                end
+            end
+        end
+
+        
+        
+        function struct = preProcessFeatureVectors(obj, dataX_in)
+        
+            metaParameters =obj.options;
+            typePreprocessing = metaParameters.typePreprocessingFeatVector;
+            if strcmpi(typePreprocessing, 'vector')
+                numExamples = size(dataX_in, 1);
+                dataX_mean = zeros(numExamples, 1);
+                dataX_std = zeros(numExamples, 1);
+                for i = 1:numExamples
+                    dataX_mean(i) = mean( dataX_in(i, :) );
+                    dataX_std(i) = std( dataX_in(i,:) );
+                end
+                numFeatures = size(dataX_in, 2);
+                struct.dataX = ( dataX_in - repmat(dataX_mean, 1, numFeatures) )./repmat(dataX_std, 1, numFeatures);
+            elseif strcmpi(typePreprocessing, 'feature')
+                numExamples = size(dataX_in, 1);
+                dataX_mean = mean(dataX_in, 1);
+                dataX_std = std(dataX_in, 1);
+                struct.dataX = ( dataX_in - repmat(dataX_mean, numExamples, 1) )./repmat(dataX_std, numExamples, 1);
+                struct.mean = dataX_mean;
+                struct.std = dataX_std;
+            elseif strcmpi(typePreprocessing, 'minmax')
+                dataX_min = min( dataX_in(:) );
+                dataX_max = max( dataX_in(:) );
+                struct.dataX = ( dataX_in - dataX_min ) / (dataX_max - dataX_min);
+                struct.min = dataX_min;
+                struct.max = dataX_max;
+            elseif strcmpi(typePreprocessing, 'none')
+                struct.dataX = dataX_in;
+            else
+                error('Select a valid method for pre-processing the feature vectors');
+            end
+        end
+
+
+        function weights = trainSoftmaxNN(obj,dataX,dataY)
+            
+            metaParameters = obj.options;
+            numNeuronsLayers = obj.numNeuronsLayers;
+            
+            fprintf('Training an artificial neural network\n');
+
+            % Initializing the Neural Network Parameters Randomly
+            initialTheta = [];
+            for i = 2:length(numNeuronsLayers)
+                r  = sqrt(6) / sqrt(numNeuronsLayers(i) + numNeuronsLayers(i - 1) + 1);
+                W = rand(numNeuronsLayers(i), numNeuronsLayers(i - 1) + 1) * 2 * r - r;
+                % mean = 0;
+                % sigma = 0.01;
+                %     W = normrnd(mean, sigma, numNeuronsLayers(i), numNeuronsLayers(i - 1) + 1);
+                initialTheta = [initialTheta; W(:)];
+            end
+
+            % Unrolling parameters
+            options = optimset('MaxIter', metaParameters.numIterations);
+            costFunction = @(t) softmaxNNCostFunction(dataX, dataY,...
+                numNeuronsLayers,...
+                t,...
+                obj.transferFunctions,...
+                metaParameters);
+
+            % Now, costFunction is a function that takes in only one argument (the
+            % neural network parameters)
+            [theta, cost, iterations] = fmincg(costFunction, initialTheta, options);
+
+            % Plotting the error curve
+            figure;
+            try
+                plot(1:iterations,cost,'*r','LineWidth',2);
+            catch
+                plot(1:length(cost),cost,'*r','LineWidth',2);
+            end
+            xlabel('Epoch number');
+            ylabel('Cost value');
+            grid on;
+            drawnow;
+            ylim([0 max(cost)*1.05]);
+            % Reshaping the weight matrices
+            numLayers = length(numNeuronsLayers);
+            endPoint = 0;
+            for i = 2:numLayers
+                numRows = numNeuronsLayers(i);
+                numCols = numNeuronsLayers(i - 1) + 1;
+                numWeights = numRows*numCols;
+                startPoint = endPoint + 1;
+                endPoint = endPoint + numWeights;
+                weights{i - 1} = reshape(theta(startPoint:endPoint), numRows, numCols);
+            end
+
+            % Computing the training error
+            [dummyVar, A] = forwardPropagation(dataX, weights, obj.transferFunctions, metaParameters);
+            P = A{end};
+            [dummyVar, predictedLabels] = max(P, [], 2);
+            trainingAccuracy = 100*sum(predictedLabels == dataY)/length(dataY);
+            fprintf('Training Accuracy of the NEURAL NETWORK: %1.2f %%\n\n', trainingAccuracy);
+        end
+        
+        
+        
+        function [predicted_Y, actual_Y, time, vectorTimePoints] = classifyEMG_SegmentationNN(obj, test_X, test_Y, nnModel)
+            options = obj.options;  
+    
+            % Settings for pre-processing
+            Fa = options.Fa;
+            Fb = options.Fb;
+            rectFcn = options.rectFcn;
+
+            % Sliding window settings
+            windowLength = options.windowLength;
+            strideLength = options.strideLength;
+
+            % Segmentation settings
+            segmentation = options.Segmentation;
+            FaSegmentation = options.FaSegmentation;
+            FbSegmentation = options.FbSegmentation;
+            rectFcnSegmentation = options.rectFcnSegmentation;
+
+            % Neural network settings
+            typePreprocessingFeatVector = options.typePreprocessingFeatVector;
+            centers = nnModel.centers;
+            model = nnModel.model;
+            transferFunctions = nnModel.transferFunctions;
+
+
+            % Feature vector pre-processing settings
+            try
+                meanVal = nnModel.mean;
+                stdVal = nnModel.std;
+            catch
+                meanVal = [];
+                stdVal = [];
+            end
+            try
+                minVal = nnModel.min;
+                maxVal = nnModel.max;
+            catch
+                minVal = [];
+                maxVal = [];
+            end
+
+            numTestingClasses = length(test_X);
+            predicted_Y = cell(1, numTestingClasses);
+            actual_Y = cell(1, numTestingClasses);
+            time = cell(1, numTestingClasses);
+            vectorTimePoints = cell(1, numTestingClasses); 
+            parfor class_i = 1:numTestingClasses
+                test_emg_class_i = test_X{class_i};
+                numTestingTrials_class_i = length(test_emg_class_i);
+                for trial_j = 1:numTestingTrials_class_i
+                    fprintf('Gesture: %d/%d, Sample: %d/%d\n', ...
+                        class_i, numTestingClasses, trial_j, numTestingTrials_class_i);
+                    test_emg_class_i__trial_j = test_emg_class_i{trial_j};
+                    count = 0;
+                    emgLength = size(test_emg_class_i__trial_j, 1);
+                    numClassifications = floor( (emgLength - windowLength)/strideLength ) + 1;
+                    predLabelSeq = zeros(1, numClassifications);
+                    vecTime = zeros(1, numClassifications);
+                    timeSeq = zeros(1, numClassifications);
+                    while true
+                        startPoint = strideLength*count + 1;
+                        %fprintf('inicio: %d\n',startPoint);
+                        endPoint = startPoint + windowLength - 1;
+                        if endPoint > emgLength
+                            break;
+                        end
+                        % Acquisition of a window observation
+                        tStart = tic;
+                        window_emg = test_emg_class_i__trial_j(startPoint:endPoint, :);
+                        if segmentation
+                            % Segmentation of the muscle contraction
+                            filtEMG = preProcessEMGSegment(window_emg,...
+                                FaSegmentation,...
+                                FbSegmentation,...
+                                rectFcnSegmentation);
+                            [idxStart, idxEnd] = detectMuscleActivity(filtEMG, options);
+                        else
+                            idxStart = 1;
+                            idxEnd = size(window_emg, 1);
+                        end
+                        t_acq = toc(tStart);
+                        % If the muscle contraction is fully contained in the window
+                        % observation
+                        if idxStart ~= 1 && idxEnd ~= size(window_emg, 1)
+                            % Computation of the envelope: rectification and filtering
+                            tStart = tic;
+                            window_emg = window_emg(idxStart:idxEnd, :);
+                            filt_window_emg = preProcessEMGSegment(window_emg, Fa, Fb, rectFcn);
+                            t_filt = toc(tStart);
+                            % Computing the feature vector using the DTW distance
+                            tStart = tic;
+                            filt_window_emg_cell = { filt_window_emg };
+                            featVector = featureExtraction(filt_window_emg_cell, centers, options);
+                            % Pre-processing of the feature vector
+                            if strcmpi(typePreprocessingFeatVector, 'vector')
+                                featVectorP = ( featVector - mean(featVector) ) / std(featVector);
+                            elseif strcmpi(typePreprocessingFeatVector, 'feature')
+                                featVectorP = ( featVector - meanVal ) ./ stdVal;
+                            elseif strcmpi(typePreprocessingFeatVector, 'minmax')
+                                featVectorP = ( featVector - minVal ) / ( maxVal - minVal );
+                            elseif strcmpi(typePreprocessingFeatVector, 'none')
+                                featVectorP = featVector;
+                            end
+                            t_featureExtraction = toc(tStart);
+                            % Classification of the feature vector
+                            tStart = tic;
+                            [dummyVar, A] = forwardPropagation(featVectorP,...
+                                model, transferFunctions, options);
+                            probNN = A{end};
+                            [probabilityNN, predictedLabelNN] = max(probNN);
+                            t_classificationNN = toc(tStart);
+                            % Thresholding
+                            tStart = tic;
+                            if probabilityNN <= 0.5
+                                predictedLabelNN = 1;
+                            end
+                            t_threshNN = toc(tStart);
+                        else
+                            t_filt = 0;
+                            t_featureExtraction = 0;
+                            t_classificationNN = 0;
+                            t_threshNN = 0;
+                            predictedLabelNN = 1;
+                        end
+                        % Storing the predictions
+                        count = count + 1;
+                        predLabelSeq(1, count) = predictedLabelNN;
+                        vecTime(1, count) =startPoint;
+                        % Adding up the times
+                        timeSeq(1, count) = t_acq + t_filt +...
+                            t_featureExtraction + ...
+                            t_classificationNN + ...
+                            t_threshNN;
+
+
+                    end
+                    predicted_Y{class_i}{trial_j} = predLabelSeq;
+                    actual_Y{class_i}{trial_j} = test_Y{class_i}{trial_j}(1);
+                    time{class_i}{trial_j} = timeSeq;
+                    vectorTimePoints{class_i}{trial_j} = vecTime;
+                end
+            end
+        end
+        
+
+        function [predictedLabels, actualLabels, time] = posProcessLabels(obj,predictedSeq, actualSeq)
+
+        numClasses = length(predictedSeq);
+        predictedLabels = [];
+        actualLabels = [];
+        time = cell(1, numClasses);
+        for class_i = 1:numClasses
+            numTestingSamples_class_i = length(predictedSeq{class_i});
+            finalPredictedLabels_class_i = [];
+            finalActualLabels_class_i = [];
+            for sample_j = 1:numTestingSamples_class_i
+                predictions = predictedSeq{class_i}{sample_j};
+                predictions(:, 1) = 1; % The first classification is always the class "no-gesture"
+                % Post-processing the sequence of labels
+                postProcessedLabels = predictions;
+                numLabels = size(predictions, 2);
+                numClassifiers = size(postProcessedLabels, 1);
+                time{class_i}{sample_j} = zeros(numClassifiers, numLabels);
+                for label_i = 2:numLabels
+                    tStart = tic;
+                    % If the previous label in the sequence is equal to the current
+                    % label, then the class no-gesture is returned as the current
+                    % label. Otherwise, the current label is not changed
+                    cond = predictions(:, label_i) == predictions(:,label_i - 1);
+                    postProcessedLabels(:, label_i)  = 1*(cond) + predictions(:, label_i).*(1 - cond);
+                    time{class_i}{sample_j}(:, label_i) = toc(tStart)/numClassifiers;
+                end
+                time{class_i}{sample_j}(:, 1) = time{class_i}{sample_j}(:, 2);
+
+                % Final label of the test example predicted by each classifier
+                finalLabel = zeros(numClassifiers, 1);
+                for classifier_i = 1:numClassifiers
+                    uniqueLabels = unique(postProcessedLabels(classifier_i, :));
+                    uniqueLabelsWithoutRest = uniqueLabels(uniqueLabels ~= 1);
+                    if isempty(uniqueLabelsWithoutRest)
+                        finalLabel(classifier_i) = 1; % No-gesture is detected
+                    else
+                        if length(uniqueLabelsWithoutRest) > 1
+                            finalLabel(classifier_i) = uniqueLabelsWithoutRest(1); % There is an error
+                        else
+                            finalLabel(classifier_i) = uniqueLabelsWithoutRest; % Maybe it is correct
+                        end
+                    end
+                end
+                % Concatenating the predicted and actual labels for the examples of
+                % the ith class
+                finalPredictedLabels_class_i = [finalPredictedLabels_class_i, finalLabel];
+                aux = actualSeq{class_i}{sample_j}*ones(numClassifiers, 1);
+                finalActualLabels_class_i = [finalActualLabels_class_i, aux];
+            end
+            % Concatenating the predicted and actual labels of all the classes
+            predictedLabels = [predictedLabels, finalPredictedLabels_class_i];
+            actualLabels = [actualLabels, finalActualLabels_class_i];
+        end
+        end
+        
+        
+        
+        
+        function response = recognitionResults(obj,predictedLabels,predictedSeq,timeClassif,vectorTime)
+            
+            user = obj.user;
+            response.class = predictedLabels;
+            response.vectorOfLabels = predictedSeq;
+            response.vectorOfProcessingTimes = timeClassif;
+            response.vectorOfTimePoints = vectorTime;
+        end
+        
+        
+        
+        function totalTime = computeTime(obj, timeClassification, timePosprocessing)
+
+
+            numClasses = length(timeClassification);
+            totalTime = [];
+            for class_i = 1:numClasses
+                timeC_class_i = timeClassification{class_i};
+                timeP_class_i = timePosprocessing{class_i};
+                numTimes_class_i = length(timeC_class_i);
+                for trial_j = 1:numTimes_class_i
+                    time_classification = timeC_class_i{trial_j};
+                    time_posprocessing = timeP_class_i{trial_j};
+                    totalTime = [totalTime time_classification + time_posprocessing];
+                end
+            end
+        end
+        
+        
+        
+        function plotConfusionMatrix(obj,predictions,targets,time)
+            
+            listOfClassifiers = {'NN Model'};
+            [numClassifiers, N] = size(predictions);
+            numClasses = length(obj.gesture);
+            for classifier_i = 1:numClassifiers
+                % Confusion matrix
+                % Maps each label to a 0-1 vector
+                predictions_01 = full(sparse(predictions(classifier_i, :), 1:N, 1, numClasses, N));
+                targets_01 = full(sparse(targets(classifier_i, :), 1:N, 1, numClasses, N));
+                figure;
+                plotconfusion(targets_01, predictions_01);
+                title(['Classifier: ' listOfClassifiers{classifier_i}]);
+                drawnow;
+
+                % Time of processing
+                figure;
+                histogram(time(classifier_i, :), 'EdgeColor', [0 0 0], 'FaceColor', 'auto',...
+                    'Normalization', 'count', 'NumBins', 175);
+                title(['Classifier: ' listOfClassifiers(classifier_i)]);
+                fprintf('\nAverage time of processing of the classifier "%s": %3.2f ms \n',...
+                    listOfClassifiers{classifier_i}, mean(time(classifier_i, :))*1000 );
+                drawnow;
+            end
+
+
+       end
+        
+        
+
+    end
+end
+
+
+
+
+
