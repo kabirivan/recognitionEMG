@@ -6,6 +6,7 @@ addpath('Preprocessing');
 addpath('Segmentation');
 addpath('DTW distance');
 addpath('TrainingModel');
+addpath('libs'); % libreria de Jonathan
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 predictions = [];
 targets = [];
@@ -22,7 +23,7 @@ numFiles = length(fileTraining);
 userProcessed = 0;
 
 
-for user_i = 1:4
+for user_i = 1:numFiles
     
   if ~(strcmpi(fileTraining(user_i).name, '.') || strcmpi(fileTraining(user_i).name, '..') || strcmpi(fileTraining(user_i).name, '.DS_Store'))
 
@@ -62,7 +63,7 @@ for user_i = 1:4
      
      % Reading the testing samples
      version = 'testing';
-     currentUserTest = recognitionModel(user, version, gestures, options);
+     currentUserTest = recognitionModel(user, version, gestures(2:end), options);
      [test_RawX, test_Y] = currentUserTest.getTotalXnYByUser; 
      
      % Classification
@@ -87,7 +88,15 @@ for user_i = 1:4
   
 end
 
+
 % Computing the confusion matrix and time of processing
+
+
+[clas recog] = currentUserTest.generateTrainingTestingResults(fileTraining,recognitionResults)
 currentUserTest.plotConfusionMatrix(predictions,targets,time);
+
+
+% Generate results for user
+%currentUserTest.generateResultsbyUser(recognitionResults);
 
 
