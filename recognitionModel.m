@@ -704,7 +704,7 @@ classdef recognitionModel
         % Plot confusion matrix    
             listOfClassifiers = {'NN Model'};
             [numClassifiers, N] = size(predictions);
-            numClasses = length(obj.gesture);
+            numClasses = 6;
             for classifier_i = 1:numClassifiers
                 % Confusion matrix
                 % Maps each label to a 0-1 vector
@@ -726,7 +726,121 @@ classdef recognitionModel
             end
 
 
-       end
+        end
+       
+
+        
+        function generateResultsbyUser(obj,response)
+
+            userList = fieldnames(response);
+            userNum = size(userList,1);
+            ext = '.json';
+                for i = 1:userNum
+
+                userchoose = response.(userList{i});
+
+                txt = jsonencode(userchoose);
+                USER = [userList{i} 'response' ext];
+                fid = fopen(USER, 'wt');
+                fprintf(fid,txt);
+                fclose(fid);
+                end
+
+
+        end
+
+          
+        
+        
+        function [classification, recognition]= generateTrainingTestingResults(obj,fileTraining,response)  
+            numFiles = length(fileTraining);
+            userProcessed = 0;
+            kRep = 25;
+
+            gesNum = [5 2 3 4 6];
+            gestures = {'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
+
+            numClasses = length(gestures);
+
+            cont = 0;
+            aux1 = 1;
+            aux2 = 1;
+            aux3 = 0;
+
+            for user_i = 1:numFiles
+
+
+                if ~(strcmpi(fileTraining(user_i).name, '.') || strcmpi(fileTraining(user_i).name, '..') || strcmpi(fileTraining(user_i).name, '.DS_Store'))
+
+                    userProcessed = userProcessed + 1;
+                    file = ['trainingJSON/' fileTraining(user_i).name];
+                    text = fileread(file);
+                    user = jsondecode(text);
+                    fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
+
+
+                     for i_class = 1:numClasses
+
+
+                          for i_sample = 1:kRep
+
+                            cont = cont + 1;
+
+                            sample = sprintf('sample%d',i_sample);
+
+                            repOrgInfo.groundTruth = user.testingSamples.(gestures{i_class}).(sample).groundTruth';
+                            repOrgInfo.gestureName = categorical(cellstr(gestures{i_class}));
+
+                            responseUser.class = categorical(code2gesture(response.(user.userInfo.name).class(cont)));
+
+                            tempo = response.(user.userInfo.name).vectorOfLabels{1,i_class}{1,kRep};
+
+                            StrOut = repmat({'noGesture'},size(tempo)) ;
+                            [tf, idx] =ismember(tempo, gesNum) ;
+                            StrOut(tf) = gestures(idx(tf));
+
+                            responseUser.vectorOfLabels = categorical(StrOut);
+                            responseUser.vectorOfTimePoints = response.(user.userInfo.name).vectorOfTimePoints{1,i_class}{1,kRep};
+                            responseUser.vectorOfProcessingTimes = response.(user.userInfo.name).vectorOfProcessingTimes{1,i_class}{1,kRep};
+
+                            r1 = evalRecognition(repOrgInfo,responseUser);
+
+
+                            results{aux1,1}=r1.classResult;
+                            results{aux1,2}=r1.recogResult;
+
+                            if results{aux1,2} == 1
+                                    aux3 = aux3 + 1;
+                            end
+
+                            results{aux1,3}=char(repOrgInfo.gestureName);
+
+                            aux1 = aux1 + 1;
+                          end
+
+                     end 
+
+                     recog_std{aux2,1} = aux3/125;
+                     aux2= aux2 + 1;
+                     aux3 = 0;
+                     cont = 0;
+
+                end
+
+            end
+            
+            
+                classification = sum(cell2mat(results(:,1)));
+                classification = 100*classification/(125*userProcessed);
+
+                recognition = sum(cell2mat(results(:,2)));
+                recognition = 100*recognition/(125*userProcessed); 
+            
+            
+        end
+        
+
+        
         
         
 
