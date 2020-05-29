@@ -107,8 +107,64 @@ classdef recognitionModel
 
             end
 
-        end
+       end
         
+        
+       
+       function X = getTotalXnYByUserTest(obj)
+       % This function reads the time series (X) and the labels (Y) of the user
+       % "username", stored in the forlder "pathname", corresponding to "training"
+       % or "testing" (i.e., value of variable "version") and the gestures 
+       % indicated in the cell "gestures"
+            
+       
+            if (strcmp('training',obj.version) == 1)
+
+                sampleType = 'trainingSamples';
+
+            elseif (strcmp('testing',obj.version) == 1)
+
+                sampleType = 'testingSamples';
+
+            end
+
+            gestureData = obj.user.(sampleType);
+            numTrialsForEachGesture = length(fieldnames(gestureData));
+ 
+
+            for i_emg = 1:numTrialsForEachGesture
+
+                sampleNum = sprintf('sample%d',i_emg);
+                emgSample = gestureData.(sampleNum).emg;
+
+                EMG = [];
+
+                    for ch = 1:8               
+                        channel = sprintf('ch%d',ch); 
+                        EMG(:,ch) = emgSample.(channel);
+                    end
+
+                [samples, ~] = size(EMG);
+                % GET X
+
+                x{i_emg} = EMG;
+
+            end
+
+            data = reshape(x,[],25);
+
+            for column = 1:6
+
+                X{column} = data(column,:);
+
+            end
+
+       
+        end
+       
+       
+       
+       
 
         
         function emg_out = preProcessEMG(obj,emg_in)
@@ -451,7 +507,7 @@ classdef recognitionModel
         
         
         
-        function [predicted_Y, actual_Y, time, vectorTimePoints] = classifyEMG_SegmentationNN(obj, test_X, test_Y, nnModel)
+        function [predicted_Y, time, vectorTimePoints] = classifyEMG_SegmentationNN(obj, test_X, nnModel)
        
         % This function applies a hand gesture recognition model based on artificial
         % feed-forward neural networks and automatic feature extraction to a set of
@@ -596,7 +652,6 @@ classdef recognitionModel
 
                     end
                     predicted_Y{class_i}{trial_j} = predLabelSeq;
-                    actual_Y{class_i}{trial_j} = test_Y{class_i}{trial_j}(1);
                     time{class_i}{trial_j} = timeSeq;
                     vectorTimePoints{class_i}{trial_j} = vecTime;
                 end
@@ -604,7 +659,7 @@ classdef recognitionModel
         end
         
 
-        function [predictedLabels, actualLabels, time] = posProcessLabels(obj,predictedSeq, actualSeq)
+        function [predictedLabels, time] = posProcessLabels(obj,predictedSeq)
         % This function post-processes the sequence of labels returned by a
         % classifier. Each row of predictedSeq{class_i}{example_j} is a sequence of 
         % labels predicted by a different classifier for the jth example belonging
@@ -654,13 +709,11 @@ classdef recognitionModel
                 end
                 % Concatenating the predicted and actual labels for the examples of
                 % the ith class
-                finalPredictedLabels_class_i = [finalPredictedLabels_class_i, finalLabel];
-                aux = actualSeq{class_i}{sample_j}*ones(numClassifiers, 1);
-                finalActualLabels_class_i = [finalActualLabels_class_i, aux];
+                finalPredictedLabels_class_i = [finalPredictedLabels_class_i, finalLabel];           
             end
             % Concatenating the predicted and actual labels of all the classes
             predictedLabels = [predictedLabels, finalPredictedLabels_class_i];
-            actualLabels = [actualLabels, finalActualLabels_class_i];
+           
         end
         end
         

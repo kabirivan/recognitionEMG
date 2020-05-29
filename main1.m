@@ -6,6 +6,8 @@ addpath('Preprocessing');
 addpath('Segmentation');
 addpath('DTW distance');
 addpath('TrainingModel');
+addpath('Feature extraction');
+
 addpath('libs'); % libreria de Jonathan
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 predictions = [];
@@ -18,7 +20,7 @@ load options.mat
 
 %%
 
-fileTraining = dir('trainingJSON');
+fileTraining = dir('testingJSON');
 numFiles = length(fileTraining);
 userProcessed = 0;
 
@@ -28,7 +30,7 @@ for user_i = 1:numFiles
   if ~(strcmpi(fileTraining(user_i).name, '.') || strcmpi(fileTraining(user_i).name, '..') || strcmpi(fileTraining(user_i).name, '.DS_Store'))
 
      userProcessed = userProcessed + 1;
-     file = ['trainingJSON/' fileTraining(user_i).name];
+     file = ['testingJSON/' fileTraining(user_i).name];
      text = fileread(file);
      user = jsondecode(text);
      fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
@@ -63,19 +65,18 @@ for user_i = 1:numFiles
      
      % Reading the testing samples
      version = 'testing';
-     currentUserTest = recognitionModel(user, version, gestures(2:end), options);
-     [test_RawX, test_Y] = currentUserTest.getTotalXnYByUser; 
+     currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
+     test_RawX = currentUserTest.getTotalXnYByUserTest(); 
      
      % Classification
-     [predictedSeq, actualSeq, timeClassif, vectorTime] = currentUserTest.classifyEMG_SegmentationNN(test_RawX, test_Y, nnModel);
+     [predictedSeq, timeClassif, vectorTime] = currentUserTest.classifyEMG_SegmentationNN(test_RawX, nnModel);
      
      % Pos-processing labels
-     [predictedLabels, actualLabels, timePos] = currentUserTest.posProcessLabels(predictedSeq, actualSeq);
+     [predictedLabels, timePos] = currentUserTest.posProcessLabels(predictedSeq);
      
      % Concatenating the predictions of all the users for computing the
      % errors
      predictions = [predictions, predictedLabels];
-     targets = [targets, actualLabels];
      recognitionResults.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime);  
 
      % Computing the time of processing
@@ -90,13 +91,9 @@ end
 
 
 % Computing the confusion matrix and time of processing
-
-
-[clas recog] = currentUserTest.generateTrainingTestingResults(fileTraining,recognitionResults)
-currentUserTest.plotConfusionMatrix(predictions,targets,time);
-
+%[clas recog] = currentUserTest.generateTrainingTestingResults(fileTraining,recognitionResults)
 
 % Generate results for user
-%currentUserTest.generateResultsbyUser(recognitionResults);
+currentUserTest.generateResultsbyUser(recognitionResults);
 
 
