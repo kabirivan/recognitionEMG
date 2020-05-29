@@ -448,7 +448,7 @@ classdef recognitionModel
             metaParameters = obj.options;
             numNeuronsLayers = obj.numNeuronsLayers;
             
-            fprintf('Training an artificial neural network\n');
+            %fprintf('Training an artificial neural network\n');
 
             % Initializing the Neural Network Parameters Randomly
             initialTheta = [];
