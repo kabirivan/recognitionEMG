@@ -474,17 +474,18 @@ classdef recognitionModel
             [theta, cost, iterations] = fmincg(costFunction, initialTheta, options);
 
             % Plotting the error curve
-            figure;
-            try
-                plot(1:iterations,cost,'*r','LineWidth',2);
-            catch
-                plot(1:length(cost),cost,'*r','LineWidth',2);
-            end
-            xlabel('Epoch number');
-            ylabel('Cost value');
-            grid on;
-            drawnow;
-            ylim([0 max(cost)*1.05]);
+%             figure;
+%             try
+%                 plot(1:iterations,cost,'*r','LineWidth',2);
+%             catch
+%                 plot(1:length(cost),cost,'*r','LineWidth',2);
+%             end
+%             xlabel('Epoch number');
+%             ylabel('Cost value');
+%             grid on;
+%             drawnow;
+%             ylim([0 max(cost)*1.05]);
+            
             % Reshaping the weight matrices
             numLayers = length(numNeuronsLayers);
             endPoint = 0;
