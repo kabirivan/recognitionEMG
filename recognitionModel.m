@@ -566,8 +566,8 @@ classdef recognitionModel
                 test_emg_class_i = test_X{class_i};
                 numTestingTrials_class_i = length(test_emg_class_i);
                 for trial_j = 1:numTestingTrials_class_i
-                    fprintf('Gesture: %d/%d, Sample: %d/%d\n', ...
-                        class_i, numTestingClasses, trial_j, numTestingTrials_class_i);
+                   % fprintf('Gesture: %d/%d, Sample: %d/%d\n', ...
+                   %     class_i, numTestingClasses, trial_j, numTestingTrials_class_i);
                     test_emg_class_i__trial_j = test_emg_class_i{trial_j};
                     count = 0;
                     emgLength = size(test_emg_class_i__trial_j, 1);
