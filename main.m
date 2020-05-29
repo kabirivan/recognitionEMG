@@ -1,6 +1,7 @@
 clc
 clear all
 close all
+warning off all;
 
 addpath('Preprocessing');
 addpath('Segmentation');
@@ -63,7 +64,7 @@ for user_i = 1:numFiles
      nnModel.transferFunctions = currentUserTrain.transferFunctions;
      nnModel.centers = bestCenters;
      
-     
+    %% Testing  
      % Reading the testing samples
      version = 'testing';
      currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
@@ -78,7 +79,7 @@ for user_i = 1:numFiles
      recognitionResults.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime);   
   end
   
-  
+  clc
 end
 
 

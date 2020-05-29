@@ -503,7 +503,7 @@ classdef recognitionModel
             P = A{end};
             [dummyVar, predictedLabels] = max(P, [], 2);
             trainingAccuracy = 100*sum(predictedLabels == dataY)/length(dataY);
-            fprintf('Training Accuracy of the NEURAL NETWORK: %1.2f %%\n\n', trainingAccuracy);
+            %fprintf('Training Accuracy of the NEURAL NETWORK: %1.2f %%\n\n', trainingAccuracy);
         end
         
         
