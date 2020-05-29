@@ -793,7 +793,7 @@ classdef recognitionModel
                 userchoose = response.(userList{i});
 
                 txt = jsonencode(userchoose);
-                USER = [userList{i} 'response' ext];
+                USER = [userList{i} '_response' ext];
                 fid = fopen(USER, 'wt');
                 fprintf(fid,txt);
                 fclose(fid);
