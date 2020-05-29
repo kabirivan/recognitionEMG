@@ -29,6 +29,8 @@ for user_i = 1:numFiles
     
   if ~(strcmpi(fileTraining(user_i).name, '.') || strcmpi(fileTraining(user_i).name, '..') || strcmpi(fileTraining(user_i).name, '.DS_Store'))
 
+ %% Adquisition     
+      
      userProcessed = userProcessed + 1;
      file = ['testingJSON/' fileTraining(user_i).name];
      text = fileread(file);
@@ -39,9 +41,10 @@ for user_i = 1:numFiles
     % Reading the training samples
      version = 'training'; 
      currentUserTrain = recognitionModel(user, version, gestures, options);
+     [train_RawX_temp, train_Y_temp] = currentUserTrain.getTotalXnYByUser; 
     
      % Preprocessing
-     [train_RawX_temp, train_Y_temp] = currentUserTrain.getTotalXnYByUser; 
+    
      train_FilteredX_temp = currentUserTrain.preProcessEMG(train_RawX_temp);
      
       % Making a single set with the training samples of all the classes
