@@ -518,7 +518,7 @@ classdef recognitionModel
             
             
             options = obj.options;  
-    
+            
             % Settings for pre-processing
             Fa = options.Fa;
             Fb = options.Fb;
@@ -724,10 +724,44 @@ classdef recognitionModel
         function response = recognitionResults(obj,predictedLabels,predictedSeq,timeClassif,vectorTime)
             
             user = obj.user;
-            response.class = predictedLabels;
-            response.vectorOfLabels = predictedSeq;
-            response.vectorOfProcessingTimes = timeClassif;
-            response.vectorOfTimePoints = vectorTime;
+            res.class = predictedLabels;
+            res.vectorOfLabels = predictedSeq;
+            res.vectorOfProcessingTimes = timeClassif;
+            res.vectorOfTimePoints = vectorTime;
+            kRep = 25;
+            gestures = obj.gesture;
+            gesNum = [1 5 2 3 4 6];
+            numClasses = length(gestures)
+            cont = 0;
+            
+           for i_class = 1:numClasses
+
+
+                for i_sample = 1:kRep
+
+                    cont = cont + 1;
+                    response.testing{cont,1}.class = categorical(code2gesture(res.class(cont)));
+                    tempo = res.vectorOfLabels{1,i_class}{1,kRep};
+
+                    StrOut = repmat({'noGesture'},size(tempo)) ;
+                    [tf, idx] =ismember(tempo, gesNum) ;
+                    StrOut(tf) = gestures(idx(tf));
+
+                    response.testing{cont,1}.vectorOfLabels = categorical(StrOut);
+                    response.testing{cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
+                    response.testing{cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
+
+                end
+
+
+
+            end   
+            
+            
+            
+            
+            
+            
         end
         
         
@@ -752,35 +786,8 @@ classdef recognitionModel
             end
         end
         
-        
-        
-        function plotConfusionMatrix(obj,predictions,targets,time)
-        % Plot confusion matrix    
-            listOfClassifiers = {'NN Model'};
-            [numClassifiers, N] = size(predictions);
-            numClasses = 6;
-            for classifier_i = 1:numClassifiers
-                % Confusion matrix
-                % Maps each label to a 0-1 vector
-                predictions_01 = full(sparse(predictions(classifier_i, :), 1:N, 1, numClasses, N));
-                targets_01 = full(sparse(targets(classifier_i, :), 1:N, 1, numClasses, N));
-                figure;
-                plotconfusion(targets_01, predictions_01);
-                title(['Classifier: ' listOfClassifiers{classifier_i}]);
-                drawnow;
+ 
 
-                % Time of processing
-                figure;
-                histogram(time(classifier_i, :), 'EdgeColor', [0 0 0], 'FaceColor', 'auto',...
-                    'Normalization', 'count', 'NumBins', 175);
-                title(['Classifier: ' listOfClassifiers(classifier_i)]);
-                fprintf('\nAverage time of processing of the classifier "%s": %3.2f ms \n',...
-                    listOfClassifiers{classifier_i}, mean(time(classifier_i, :))*1000 );
-                drawnow;
-            end
-
-
-        end
        
 
         
@@ -800,99 +807,19 @@ classdef recognitionModel
                 fclose(fid);
                 end
 
-
         end
 
           
         
+        function generateResultsJSON(obj,response)
+            
+            txt = jsonencode(dataset);
+            fid = fopen('responses.json', 'wt');
+            fprintf(fid,txt);
+            fclose(fid);
         
-        function [classification, recognition]= generateTrainingTestingResults(obj,fileTraining,response)  
-            numFiles = length(fileTraining);
-            userProcessed = 0;
-            kRep = 25;
-
-            gesNum = [5 2 3 4 6];
-            gestures = {'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
-
-            numClasses = length(gestures);
-
-            cont = 0;
-            aux1 = 1;
-            aux2 = 1;
-            aux3 = 0;
-
-            for user_i = 1:numFiles
-
-
-                if ~(strcmpi(fileTraining(user_i).name, '.') || strcmpi(fileTraining(user_i).name, '..') || strcmpi(fileTraining(user_i).name, '.DS_Store'))
-
-                    userProcessed = userProcessed + 1;
-                    file = ['trainingJSON/' fileTraining(user_i).name];
-                    text = fileread(file);
-                    user = jsondecode(text);
-                    fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
-
-
-                     for i_class = 1:numClasses
-
-
-                          for i_sample = 1:kRep
-
-                            cont = cont + 1;
-
-                            sample = sprintf('sample%d',i_sample);
-
-                            repOrgInfo.groundTruth = user.testingSamples.(gestures{i_class}).(sample).groundTruth';
-                            repOrgInfo.gestureName = categorical(cellstr(gestures{i_class}));
-
-                            responseUser.class = categorical(code2gesture(response.(user.userInfo.name).class(cont)));
-
-                            tempo = response.(user.userInfo.name).vectorOfLabels{1,i_class}{1,kRep};
-
-                            StrOut = repmat({'noGesture'},size(tempo)) ;
-                            [tf, idx] =ismember(tempo, gesNum) ;
-                            StrOut(tf) = gestures(idx(tf));
-
-                            responseUser.vectorOfLabels = categorical(StrOut);
-                            responseUser.vectorOfTimePoints = response.(user.userInfo.name).vectorOfTimePoints{1,i_class}{1,kRep};
-                            responseUser.vectorOfProcessingTimes = response.(user.userInfo.name).vectorOfProcessingTimes{1,i_class}{1,kRep};
-
-                            r1 = evalRecognition(repOrgInfo,responseUser);
-
-
-                            results{aux1,1}=r1.classResult;
-                            results{aux1,2}=r1.recogResult;
-
-                            if results{aux1,2} == 1
-                                    aux3 = aux3 + 1;
-                            end
-
-                            results{aux1,3}=char(repOrgInfo.gestureName);
-
-                            aux1 = aux1 + 1;
-                          end
-
-                     end 
-
-                     recog_std{aux2,1} = aux3/125;
-                     aux2= aux2 + 1;
-                     aux3 = 0;
-                     cont = 0;
-
-                end
-
-            end
-            
-            
-                classification = sum(cell2mat(results(:,1)));
-                classification = 100*classification/(125*userProcessed);
-
-                recognition = sum(cell2mat(results(:,2)));
-                recognition = 100*recognition/(125*userProcessed); 
-            
             
         end
-        
 
         
         
