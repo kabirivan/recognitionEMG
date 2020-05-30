@@ -19,21 +19,22 @@ time = [];
 
 load options.mat
 
-%%
 
-fileTraining = dir('testingJSON');
-numFiles = length(fileTraining);
+%%
+folderUserType = 'testingJSON';
+typeUser = dir(folderUserType);
+numFiles = length(typeUser);
 userProcessed = 0;
 
 
 for user_i = 1:numFiles
     
-  if ~(strcmpi(fileTraining(user_i).name, '.') || strcmpi(fileTraining(user_i).name, '..') || strcmpi(fileTraining(user_i).name, '.DS_Store'))
+  if ~(strcmpi(typeUser(user_i).name, '.') || strcmpi(typeUser(user_i).name, '..') || strcmpi(typeUser(user_i).name, '.DS_Store'))
 
  %% Adquisition     
       
      userProcessed = userProcessed + 1;
-     file = ['testingJSON/' fileTraining(user_i).name];
+     file = [folderUserType '/' typeUser(user_i).name];
      text = fileread(file);
      user = jsondecode(text);
      fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
@@ -76,7 +77,7 @@ for user_i = 1:numFiles
      % Concatenating the predictions of all the users for computing the
      % errors
      predictions = [predictions, predictedLabels];
-     recognitionResults.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime);   
+     responses.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime);   
   end
   
   clc
@@ -87,6 +88,6 @@ end
 %[clas recog] = currentUserTest.generateTrainingTestingResults(fileTraining,recognitionResults)
 
 % Generate results for user
-currentUserTest.generateResultsbyUser(recognitionResults);
-
+%currentUserTest.generateResultsbyUser(responses);
+currentUserTest.generateResultsJSON(responses);
 
