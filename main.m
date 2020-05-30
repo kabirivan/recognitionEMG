@@ -84,8 +84,6 @@ for user_i = 1:numFiles
 end
 
 
-% Computing the confusion matrix and time of processing
-%[clas recog] = currentUserTest.generateTrainingTestingResults(fileTraining,recognitionResults)
 
 % Generate results for user
 %currentUserTest.generateResultsbyUser(responses);
