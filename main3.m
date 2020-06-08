@@ -28,7 +28,7 @@ numFiles = length(filesInFolder);
 userProcessed = 0;
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
-for user_i = 3
+for user_i = 1:numFiles
     
   if ~(strcmpi(filesInFolder(user_i).name, '.') || strcmpi(filesInFolder(user_i).name, '..') || strcmpi(filesInFolder(user_i).name, '.DS_Store'))
 
