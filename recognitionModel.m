@@ -56,7 +56,7 @@ classdef recognitionModel
         
         for kRep = 1:reps
             rep = sprintf('idx_%d',kRep);
-            emgData = user.(gestureType).(rep).emg;
+            emgData = gestureData.(rep).emg;
 
 
             EMG = [];
@@ -74,9 +74,8 @@ classdef recognitionModel
             
             % GET Y
             
-          if (strcmp('training',version) == 1)  
+          if (strcmp('training',obj.version) == 1)  
             code = codeSamples(kRep,gestureData);
-            aux(kRep) = code;
             y{kRep} = repmat(code, samples, 1);
           end
 
@@ -84,7 +83,7 @@ classdef recognitionModel
      
         data = reshape(x,[],6)';
 
-        if (strcmp('training',version) == 1)  
+        if (strcmp('training',obj.version) == 1)  
             moves = reshape(y,[],6)';
         end
 
@@ -92,7 +91,7 @@ classdef recognitionModel
 
            X{column} = data(column,:);
 
-           if (strcmp('training',version) == 1)   
+           if (strcmp('training',obj.version) == 1)   
                
               Y{column} = moves(column,:);
               
@@ -654,155 +653,10 @@ classdef recognitionModel
         end
         
         
-        function [predicted_Y, actual_Y, time, vectorTimePoints] = classifyEMGTraining_SegmentationNN(obj, test_X, test_Y,nnModel)
-            
-            options = obj.options;  
-            
-            % Settings for pre-processing
-            Fa = options.Fa;
-            Fb = options.Fb;
-            rectFcn = options.rectFcn;
+     
 
-            % Sliding window settings
-            windowLength = options.windowLength;
-            strideLength = options.strideLength;
-
-            % Segmentation settings
-            segmentation = options.Segmentation;
-            FaSegmentation = options.FaSegmentation;
-            FbSegmentation = options.FbSegmentation;
-            rectFcnSegmentation = options.rectFcnSegmentation;
-
-            % Neural network settings
-            typePreprocessingFeatVector = options.typePreprocessingFeatVector;
-            centers = nnModel.centers;
-            model = nnModel.model;
-            transferFunctions = nnModel.transferFunctions;
-
-
-            % Feature vector pre-processing settings
-            try
-                meanVal = nnModel.mean;
-                stdVal = nnModel.std;
-            catch
-                meanVal = [];
-                stdVal = [];
-            end
-            try
-                minVal = nnModel.min;
-                maxVal = nnModel.max;
-            catch
-                minVal = [];
-                maxVal = [];
-            end
-
-            numTestingClasses = length(test_X);
-            predicted_Y = cell(1, numTestingClasses);
-            actual_Y = cell(1, numTestingClasses);
-            time = cell(1, numTestingClasses);
-            vectorTimePoints = cell(1, numTestingClasses); 
-            parfor class_i = 1:numTestingClasses
-                test_emg_class_i = test_X{class_i};
-                numTestingTrials_class_i = length(test_emg_class_i);
-                for trial_j = 1:numTestingTrials_class_i
-                   % fprintf('Gesture: %d/%d, Sample: %d/%d\n', ...
-                   %     class_i, numTestingClasses, trial_j, numTestingTrials_class_i);
-                    test_emg_class_i__trial_j = test_emg_class_i{trial_j};
-                    count = 0;
-                    emgLength = size(test_emg_class_i__trial_j, 1);
-                    numClassifications = floor( (emgLength - windowLength)/strideLength ) + 1;
-                    predLabelSeq = zeros(1, numClassifications);
-                    vecTime = zeros(1, numClassifications);
-                    timeSeq = zeros(1, numClassifications);
-                    while true
-                        startPoint = strideLength*count + 1;
-                        %fprintf('inicio: %d\n',startPoint);
-                        endPoint = startPoint + windowLength - 1;
-                        if endPoint > emgLength
-                            break;
-                        end
-                        % Acquisition of a window observation
-                        tStart = tic;
-                        window_emg = test_emg_class_i__trial_j(startPoint:endPoint, :);
-                        if segmentation
-                            % Segmentation of the muscle contraction
-                            filtEMG = preProcessEMGSegment(window_emg,...
-                                FaSegmentation,...
-                                FbSegmentation,...
-                                rectFcnSegmentation);
-                            [idxStart, idxEnd] = detectMuscleActivity(filtEMG, options);
-                        else
-                            idxStart = 1;
-                            idxEnd = size(window_emg, 1);
-                        end
-                        t_acq = toc(tStart);
-                        % If the muscle contraction is fully contained in the window
-                        % observation
-                        if idxStart ~= 1 && idxEnd ~= size(window_emg, 1)
-                            % Computation of the envelope: rectification and filtering
-                            tStart = tic;
-                            window_emg = window_emg(idxStart:idxEnd, :);
-                            filt_window_emg = preProcessEMGSegment(window_emg, Fa, Fb, rectFcn);
-                            t_filt = toc(tStart);
-                            % Computing the feature vector using the DTW distance
-                            tStart = tic;
-                            filt_window_emg_cell = { filt_window_emg };
-                            featVector = featureExtraction(filt_window_emg_cell, centers, options);
-                            % Pre-processing of the feature vector
-                            if strcmpi(typePreprocessingFeatVector, 'vector')
-                                featVectorP = ( featVector - mean(featVector) ) / std(featVector);
-                            elseif strcmpi(typePreprocessingFeatVector, 'feature')
-                                featVectorP = ( featVector - meanVal ) ./ stdVal;
-                            elseif strcmpi(typePreprocessingFeatVector, 'minmax')
-                                featVectorP = ( featVector - minVal ) / ( maxVal - minVal );
-                            elseif strcmpi(typePreprocessingFeatVector, 'none')
-                                featVectorP = featVector;
-                            end
-                            t_featureExtraction = toc(tStart);
-                            % Classification of the feature vector
-                            tStart = tic;
-                            [dummyVar, A] = forwardPropagation(featVectorP,...
-                                model, transferFunctions, options);
-                            probNN = A{end};
-                            [probabilityNN, predictedLabelNN] = max(probNN);
-                            t_classificationNN = toc(tStart);
-                            % Thresholding
-                            tStart = tic;
-                            if probabilityNN <= 0.5
-                                predictedLabelNN = 1;
-                            end
-                            t_threshNN = toc(tStart);
-                        else
-                            t_filt = 0;
-                            t_featureExtraction = 0;
-                            t_classificationNN = 0;
-                            t_threshNN = 0;
-                            predictedLabelNN = 1;
-                        end
-                        % Storing the predictions
-                        count = count + 1;
-                        predLabelSeq(1, count) = predictedLabelNN;
-                        vecTime(1, count) =startPoint;
-                        % Adding up the times
-                        timeSeq(1, count) = t_acq + t_filt +...
-                            t_featureExtraction + ...
-                            t_classificationNN + ...
-                            t_threshNN;
-
-
-                    end
-                    predicted_Y{class_i}{trial_j} = predLabelSeq;
-                    actual_Y{class_i}{trial_j} = test_Y{class_i}{trial_j}(1);
-                    time{class_i}{trial_j} = timeSeq;
-                    vectorTimePoints{class_i}{trial_j} = vecTime;
-                end
-            end
-        end        
         
-        
-        
-  
-        function [predictedLabels, time] = posProcessLabels(obj,predictedSeq)
+        function predictedLabels = posProcessLabels(obj,predictedSeq)
         % This function post-processes the sequence of labels returned by a
         % classifier. Each row of predictedSeq{class_i}{example_j} is a sequence of 
         % labels predicted by a different classifier for the jth example belonging
@@ -811,7 +665,6 @@ classdef recognitionModel
         numClasses = length(predictedSeq);
         predictedLabels = [];
         actualLabels = [];
-        time = cell(1, numClasses);
         for class_i = 1:numClasses
             numTestingSamples_class_i = length(predictedSeq{class_i});
             finalPredictedLabels_class_i = [];
@@ -823,7 +676,6 @@ classdef recognitionModel
                 postProcessedLabels = predictions;
                 numLabels = size(predictions, 2);
                 numClassifiers = size(postProcessedLabels, 1);
-                time{class_i}{sample_j} = zeros(numClassifiers, numLabels);
                 for label_i = 2:numLabels
                     tStart = tic;
                     % If the previous label in the sequence is equal to the current
@@ -831,9 +683,9 @@ classdef recognitionModel
                     % label. Otherwise, the current label is not changed
                     cond = predictions(:, label_i) == predictions(:,label_i - 1);
                     postProcessedLabels(:, label_i)  = 1*(cond) + predictions(:, label_i).*(1 - cond);
-                    time{class_i}{sample_j}(:, label_i) = toc(tStart)/numClassifiers;
+                    
                 end
-                time{class_i}{sample_j}(:, 1) = time{class_i}{sample_j}(:, 2);
+                
 
                 % Final label of the test example predicted by each classifier
                 finalLabel = zeros(numClassifiers, 1);
@@ -861,66 +713,7 @@ classdef recognitionModel
         end
         
         
-      function [predictedLabels, actualLabels, time] = posProcessLabelsTraining(obj,predictedSeq, actualSeq)
-        % This function post-processes the sequence of labels returned by a
-        % classifier. Each row of predictedSeq{class_i}{example_j} is a sequence of 
-        % labels predicted by a different classifier for the jth example belonging
-        % to the ith actual class.
-
-        numClasses = length(predictedSeq);
-        predictedLabels = [];
-        actualLabels = [];
-        time = cell(1, numClasses);
-        for class_i = 1:numClasses
-            numTestingSamples_class_i = length(predictedSeq{class_i});
-            finalPredictedLabels_class_i = [];
-            finalActualLabels_class_i = [];
-            for sample_j = 1:numTestingSamples_class_i
-                predictions = predictedSeq{class_i}{sample_j};
-                predictions(:, 1) = 1; % The first classification is always the class "no-gesture"
-                % Post-processing the sequence of labels
-                postProcessedLabels = predictions;
-                numLabels = size(predictions, 2);
-                numClassifiers = size(postProcessedLabels, 1);
-                time{class_i}{sample_j} = zeros(numClassifiers, numLabels);
-                for label_i = 2:numLabels
-                    tStart = tic;
-                    % If the previous label in the sequence is equal to the current
-                    % label, then the class no-gesture is returned as the current
-                    % label. Otherwise, the current label is not changed
-                    cond = predictions(:, label_i) == predictions(:,label_i - 1);
-                    postProcessedLabels(:, label_i)  = 1*(cond) + predictions(:, label_i).*(1 - cond);
-                    time{class_i}{sample_j}(:, label_i) = toc(tStart)/numClassifiers;
-                end
-                time{class_i}{sample_j}(:, 1) = time{class_i}{sample_j}(:, 2);
-
-                % Final label of the test example predicted by each classifier
-                finalLabel = zeros(numClassifiers, 1);
-                for classifier_i = 1:numClassifiers
-                    uniqueLabels = unique(postProcessedLabels(classifier_i, :));
-                    uniqueLabelsWithoutRest = uniqueLabels(uniqueLabels ~= 1);
-                    if isempty(uniqueLabelsWithoutRest)
-                        finalLabel(classifier_i) = 1; % No-gesture is detected
-                    else
-                        if length(uniqueLabelsWithoutRest) > 1
-                            finalLabel(classifier_i) = uniqueLabelsWithoutRest(1); % There is an error
-                        else
-                            finalLabel(classifier_i) = uniqueLabelsWithoutRest; % Maybe it is correct
-                        end
-                    end
-                end
-                % Concatenating the predicted and actual labels for the examples of
-                % the ith class
-                finalPredictedLabels_class_i = [finalPredictedLabels_class_i, finalLabel];
-                aux = actualSeq{class_i}{sample_j}*ones(numClassifiers, 1);
-                finalActualLabels_class_i = [finalActualLabels_class_i, aux];
-            end
-            % Concatenating the predicted and actual labels of all the classes
-            predictedLabels = [predictedLabels, finalPredictedLabels_class_i];
-            actualLabels = [actualLabels, finalActualLabels_class_i];
-           
-        end
-        end
+      
         
         
         function response = recognitionResults(obj,predictedLabels,predictedSeq,timeClassif,vectorTime)
@@ -956,92 +749,18 @@ classdef recognitionModel
                 end
 
             end   
-          
-            
-            
-            
+         
+           
         end
         
-        
-     function plotConfusionMatrix(obj,predictions,targets)
-        listOfClassifiers = {'NN Model'};
-        [numClassifiers, N] = size(predictions);
-        numClasses = length(obj.gesture);
-        for classifier_i = 1:numClassifiers
-            % Confusion matrix
-            % Maps each label to a 0-1 vector
-            predictions_01 = full(sparse(predictions(classifier_i, :), 1:N, 1, numClasses, N));
-            targets_01 = full(sparse(targets(classifier_i, :), 1:N, 1, numClasses, N));
-            figure;
-            plotconfusion(targets_01, predictions_01);
-            title(['Classifier: ' listOfClassifiers{classifier_i}]);
-            drawnow;
-
-
-        end
-        
-    end
-        
-        
-        
-        function totalTime = computeTime(obj, timeClassification, timePosprocessing)
-        % This function computes the total time of processing of each window
-        % observation. For this task, this function adds up all the times of
-        % processing of the different modules that compose a recognition model
-
-
-            numClasses = length(timeClassification);
-            totalTime = [];
-            for class_i = 1:numClasses
-                timeC_class_i = timeClassification{class_i};
-                timeP_class_i = timePosprocessing{class_i};
-                numTimes_class_i = length(timeC_class_i);
-                for trial_j = 1:numTimes_class_i
-                    time_classification = timeC_class_i{trial_j};
-                    time_posprocessing = timeP_class_i{trial_j};
-                    totalTime = [totalTime time_classification + time_posprocessing];
-                end
-            end
-        end
-        
- 
-
-       
-
-        
-        function generateResultsbyUser(obj,response)
-
-            userList = fieldnames(response);
-            userNum = size(userList,1);
-            ext = '.json';
-                for i = 1:userNum
-
-                userchoose = response.(userList{i});
-
-                txt = jsonencode(userchoose);
-                USER = [userList{i} '_response' ext];
-                fid = fopen(USER, 'wt');
-                fprintf(fid,txt);
-                fclose(fid);
-                end
-
-        end
-
-          
-        
-        function generateResultsJSON(obj,response)
-            
+      
+        function generateResultsJSON(obj,dataset)
             txt = jsonencode(dataset);
             fid = fopen('responses.json', 'wt');
             fprintf(fid,txt);
             fclose(fid);
-        
-            
+     
         end
-
-        
-        
-        
 
     end
 end

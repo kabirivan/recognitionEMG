@@ -23,20 +23,21 @@ load options.mat
 rng('default'); 
 
 %%
-folderUserType = 'trainingJSON';
-typeUser = dir(folderUserType);
-numFiles = length(typeUser);
+userFolder = 'training';
+folderData = [userFolder 'JSON'];
+filesInFolder = dir(folderData);
+numFiles = length(filesInFolder);
 userProcessed = 0;
-
+gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
 for user_i = 3
     
-  if ~(strcmpi(typeUser(user_i).name, '.') || strcmpi(typeUser(user_i).name, '..') || strcmpi(typeUser(user_i).name, '.DS_Store'))
+  if ~(strcmpi(filesInFolder(user_i).name, '.') || strcmpi(filesInFolder(user_i).name, '..') || strcmpi(filesInFolder(user_i).name, '.DS_Store'))
 
  %% Adquisition     
       
      userProcessed = userProcessed + 1;
-     file = [folderUserType '/' typeUser(user_i).name];
+     file = [folderData '/' filesInFolder(user_i).name];
      text = fileread(file);
      user = jsondecode(text);
      fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
@@ -45,33 +46,33 @@ for user_i = 3
     % Reading the training samples
      version = 'training'; 
      currentUserTrain = recognitionModel(user, version, gestures, options);
-     [train_RawX_temp, train_Y_temp] = currentUserTrain.getTotalXnYByUser; 
+     [train_RawX_temp, train_Y_temp] = currentUserTrain.getTotalXnYByUser(); 
     
-%   %% Preprocessing   
-%       % Filter applied  
-%      train_FilteredX_temp = currentUserTrain.preProcessEMG(train_RawX_temp);
-%       % Making a single set with the training samples of all the classes
-%      [filteredDataX, dataY] = currentUserTrain.makeSingleSet(train_FilteredX_temp, train_Y_temp);
-%      % Finding the EMG that is the center of each class
-%      bestCenters = currentUserTrain.findCentersOfEachClass(filteredDataX, dataY);
-%    %% Feature Extraction      
-%      % Feature extraction by computing the DTW distanc
-%      dataX = currentUserTrain.featureExtraction(filteredDataX, bestCenters);
-%      % Preprocessing the feature vectors
-%      nnModel = currentUserTrain.preProcessFeatureVectors(dataX);
-%    
-%    %% Training 
-%      % Training the feed-forward NN
-%      nnModel.model = currentUserTrain.trainSoftmaxNN(nnModel.dataX, dataY);
-%      nnModel.numNeuronsLayers = currentUserTrain.numNeuronsLayers;
-%      nnModel.transferFunctions = currentUserTrain.transferFunctions;
-%      nnModel.centers = bestCenters;
-%      
-%     %% Testing  
-%      % Reading the testing samples
-%      version = 'testing';
-%      currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
-%      [test_RawX, test_Y] = currentUserTest.getTotalXnYByUser();
+   %% Preprocessing   
+       % Filter applied  
+     train_FilteredX_temp = currentUserTrain.preProcessEMG(train_RawX_temp);
+       % Making a single set with the training samples of all the classes
+     [filteredDataX, dataY] = currentUserTrain.makeSingleSet(train_FilteredX_temp, train_Y_temp);
+      % Finding the EMG that is the center of each class
+      bestCenters = currentUserTrain.findCentersOfEachClass(filteredDataX, dataY);
+    %% Feature Extraction      
+      % Feature extraction by computing the DTW distanc
+      dataX = currentUserTrain.featureExtraction(filteredDataX, bestCenters);
+      % Preprocessing the feature vectors
+      nnModel = currentUserTrain.preProcessFeatureVectors(dataX);
+    
+    %% Training 
+      % Training the feed-forward NN
+      nnModel.model = currentUserTrain.trainSoftmaxNN(nnModel.dataX, dataY);
+      nnModel.numNeuronsLayers = currentUserTrain.numNeuronsLayers;
+      nnModel.transferFunctions = currentUserTrain.transferFunctions;
+      nnModel.centers = bestCenters;
+      
+     %% Testing  
+      % Reading the testing samples
+      version = 'testing';
+      currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
+      [test_RawX, test_Y] = currentUserTest.getTotalXnYByUser();
 %      
 %      % Classification
 %      [predictedSeq, actualSeq, timeClassif, vectorTime] = currentUserTest.classifyEMGTraining_SegmentationNN(test_RawX, test_Y, nnModel);
