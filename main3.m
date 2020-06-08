@@ -12,9 +12,7 @@ addpath('Feature extraction');
 
 addpath('libs'); % libreria de Jonathan
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
-predictions = [];
-targets = [];
-time = [];
+
 
 %% ======================= Model Configuration ===========================
 
@@ -72,33 +70,24 @@ for user_i = 3
       % Reading the testing samples
       version = 'testing';
       currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
-      [test_RawX, test_Y] = currentUserTest.getTotalXnYByUser();
-%      
-%      % Classification
-%      [predictedSeq, actualSeq, timeClassif, vectorTime] = currentUserTest.classifyEMGTraining_SegmentationNN(test_RawX, test_Y, nnModel);
-%     
-%      % Pos-processing labels
-%      [predictedLabels, actualLabels, timePos] = currentUserTest.posProcessLabelsTraining(predictedSeq, actualSeq);
-%      
-%      % Concatenating the predictions of all the users for computing the
-%      % errors
-%      
-%      recognitionResults.(user.userInfo.name).class = predictedLabels;
-%      recognitionResults.(user.userInfo.name).vectorOfLabels = predictedSeq;
-%      recognitionResults.(user.userInfo.name).vectorOfProcessingTimes = timeClassif;
-%      recognitionResults.(user.userInfo.name).vectorOfTimePoints = vectorTime;
-%      
-%      responses.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime);   
+      test_RawX = currentUserTest.getTotalXnYByUser();
+      
+      % Classification
+      [predictedSeq,  timeClassif, vectorTime] = currentUserTest.classifyEMG_SegmentationNN(test_RawX, nnModel);
+     
+      % Pos-processing labels
+      predictedLabels = currentUserTest.posProcessLabels(predictedSeq);
+      
+      % Concatenating the predictions of all the users for computing the
+      % errors
+      
+      responses.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,userFolder);   
      
   end
   
- % clc
+  clc
 end
 
 
-% currentUserTest.plotConfusionMatrix(predictions,targets)
-% 
-% % Generate results for user
-% %currentUserTest.generateResultsbyUser(responses);
 % currentUserTest.generateResultsJSON(responses);
 

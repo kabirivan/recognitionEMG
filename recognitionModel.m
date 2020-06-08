@@ -465,19 +465,6 @@ classdef recognitionModel
             % Now, costFunction is a function that takes in only one argument (the
             % neural network parameters)
             [theta, cost, iterations] = fmincg(costFunction, initialTheta, options);
-
-            % Plotting the error curve
-%             figure;
-%             try
-%                 plot(1:iterations,cost,'*r','LineWidth',2);
-%             catch
-%                 plot(1:length(cost),cost,'*r','LineWidth',2);
-%             end
-%             xlabel('Epoch number');
-%             ylabel('Cost value');
-%             grid on;
-%             drawnow;
-%             ylim([0 max(cost)*1.05]);
             
             % Reshaping the weight matrices
             numLayers = length(numNeuronsLayers);
@@ -508,7 +495,6 @@ classdef recognitionModel
         % EMGs conatined in the set test_X. The actual label of each EMG in test_X
         % is in the set test_Y. The structure nnModel contains the trained neural
         % network              
-            
             
             options = obj.options;  
             
@@ -643,7 +629,6 @@ classdef recognitionModel
                             t_classificationNN + ...
                             t_threshNN;
 
-
                     end
                     predicted_Y{class_i}{trial_j} = predLabelSeq;
                     time{class_i}{trial_j} = timeSeq;
@@ -716,7 +701,7 @@ classdef recognitionModel
       
         
         
-        function response = recognitionResults(obj,predictedLabels,predictedSeq,timeClassif,vectorTime)
+        function response = recognitionResults(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
             
             user = obj.user;
             res.class = predictedLabels;
@@ -726,25 +711,24 @@ classdef recognitionModel
             kRep = 25;
             gestures = obj.gesture;
             gesNum = [1 5 2 3 4 6];
-            numClasses = length(gestures)
+            numClasses = length(gestures);
             cont = 0;
             
            for i_class = 1:numClasses
 
-
                 for i_sample = 1:kRep
 
                     cont = cont + 1;
-                    response.training{cont,1}.class = categorical(code2gesture(res.class(cont)));
+                    response.(typeUser){cont,1}.class = categorical(code2gesture(res.class(cont)));
                     tempo = res.vectorOfLabels{1,i_class}{1,kRep};
 
                     StrOut = repmat({'noGesture'},size(tempo)) ;
                     [tf, idx] =ismember(tempo, gesNum) ;
                     StrOut(tf) = gestures(idx(tf));
 
-                    response.training{cont,1}.vectorOfLabels = categorical(StrOut);
-                    response.training{cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.training{cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
+                    response.(typeUser){cont,1}.vectorOfLabels = categorical(StrOut);
+                    response.(typeUser){cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
+                    response.(typeUser){cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
 
                 end
 
