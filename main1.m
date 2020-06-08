@@ -97,6 +97,6 @@ end
 %[clas recog] = currentUserTest.generateTrainingTestingResults(fileTraining,recognitionResults)
 
 % Generate results for user
-currentUserTest.generateResultsbyUser(recognitionResults);
+%currentUserTest.generateResultsbyUser(recognitionResults);
 
 

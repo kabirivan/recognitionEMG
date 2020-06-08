@@ -70,8 +70,13 @@ for user_i = 1:numFiles
      version = 'testing';
      currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
      test_RawX = currentUserTest.getTotalXnYByUserTest(); 
+     %[test_RawX, test_Y] = currentUserTest.getTotalXnYByUser();
      % Classification
      [predictedSeq, timeClassif, vectorTime] = currentUserTest.classifyEMG_SegmentationNN(test_RawX, nnModel);
+     
+     %[predictedSeq, actualSeq, timeClassif, vectorTime] = ...
+      %  classifyEMGTraining_SegmentationNN(test_RawX, test_Y, nnModel);
+    
      % Pos-processing labels
      [predictedLabels, timePos] = currentUserTest.posProcessLabels(predictedSeq);
      % Concatenating the predictions of all the users for computing the
