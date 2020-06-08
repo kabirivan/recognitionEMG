@@ -3,6 +3,7 @@ clear all
 close all
 warning off all;
 
+addpath('ReadDataset');
 addpath('Preprocessing');
 addpath('Segmentation');
 addpath('DTW distance');
