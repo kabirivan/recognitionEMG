@@ -714,21 +714,24 @@ classdef recognitionModel
             numClasses = length(gestures);
             cont = 0;
             
+            response.repGroup = 'Testing';
+            response.userGroup = typeUser; 
+            
            for i_class = 1:numClasses
 
                 for i_sample = 1:kRep
 
                     cont = cont + 1;
-                    response.(typeUser){cont,1}.class = categorical(code2gesture(res.class(cont)));
+                    response.userSet{cont,1}.class = categorical(code2gesture(res.class(cont)));
                     tempo = res.vectorOfLabels{1,i_class}{1,kRep};
 
                     StrOut = repmat({'noGesture'},size(tempo)) ;
                     [tf, idx] =ismember(tempo, gesNum) ;
                     StrOut(tf) = gestures(idx(tf));
 
-                    response.(typeUser){cont,1}.vectorOfLabels = categorical(StrOut);
-                    response.(typeUser){cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.(typeUser){cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
+                    response.userSet{cont,1}.vectorOfLabels = categorical(StrOut);
+                    response.userSet{cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
+                    response.userSet{cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
 
                 end
 
