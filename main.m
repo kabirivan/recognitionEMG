@@ -28,7 +28,7 @@ load options.mat
 rng('default'); 
 
 %%
-userFolder = 'testing';
+userFolder = 'training';
 folderData = [userFolder 'JSON'];
 filesInFolder = dir(folderData);
 numFiles = length(filesInFolder);
@@ -88,7 +88,7 @@ for user_i = 1:numFiles
       % Concatenating the predictions of all the users for computing the
       % errors
       
-      responses.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,userFolder);   
+      responses.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
      
   end
   
