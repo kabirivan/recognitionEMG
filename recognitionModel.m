@@ -156,9 +156,7 @@ classdef recognitionModel
         end
        
        
-       
-       
-
+     
         
         function emg_out = preProcessEMG(obj,emg_in)
         % This function pre-process an EMG by applying normalization to tne range
@@ -621,8 +619,8 @@ classdef recognitionModel
                         end
                         % Storing the predictions
                         count = count + 1;
-                        predLabelSeq(1, count) = predictedLabelNN;
-                        vecTime(1, count) =startPoint;
+                        predLabelSeq(1, count) = predictedLabelNN;                     
+                        vecTime(1, count) =startPoint+(windowLength/2)+30;
                         % Adding up the times
                         timeSeq(1, count) = t_acq + t_filt +...
                             t_featureExtraction + ...
@@ -741,7 +739,7 @@ classdef recognitionModel
         
         
         
-                function response = recognitionResults2(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
+       function response = recognitionResults2(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
             
             user = obj.user;
             res.class = predictedLabels;
