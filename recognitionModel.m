@@ -739,6 +739,49 @@ classdef recognitionModel
            
         end
         
+        
+        
+                function response = recognitionResults2(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
+            
+            user = obj.user;
+            res.class = predictedLabels;
+            res.vectorOfLabels = predictedSeq;
+            res.vectorOfProcessingTimes = timeClassif;
+            res.vectorOfTimePoints = vectorTime;
+            kRep = 25;
+            gestures = obj.gesture;
+            gesNum = [1 5 2 3 4 6];
+            numClasses = length(gestures);
+            cont = 0;
+            
+
+            
+           for i_class = 1:numClasses
+
+                for i_sample = 1:kRep
+
+                    cont = cont + 1;
+                    response.testing{cont,1}.class = categorical(code2gesture(res.class(cont)));
+                    tempo = res.vectorOfLabels{1,i_class}{1,kRep};
+
+                    StrOut = repmat({'noGesture'},size(tempo)) ;
+                    [tf, idx] =ismember(tempo, gesNum) ;
+                    StrOut(tf) = gestures(idx(tf));
+
+                    response.testing{cont,1}.vectorOfLabels = categorical(StrOut);
+                    response.testing{cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
+                    response.testing{cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
+
+                end
+
+            end   
+         
+           
+        end
+        
+        
+        
+        
       
         function generateResultsJSON(obj,dataset)
             txt = jsonencode(dataset);

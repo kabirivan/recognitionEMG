@@ -24,12 +24,14 @@ gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
 %% ======================= Model Configuration ===========================
 
-load options.mat
+load options1.mat
+
+
 % This command makes possible the reproducibility of the results
 rng('default'); 
 
 %%
-userFolder = 'testing';
+userFolder = 'training';
 folderData = [userFolder 'JSON'];
 filesInFolder = dir(folderData);
 numFiles = length(filesInFolder);
@@ -91,13 +93,13 @@ for user_i = 1:numFiles
       % Concatenating the predictions of all the users for computing the
       % errors
       
-      responses.userSet.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
-     
+      %responses.userSet.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
+      
+      response.(user.userInfo.name) = currentUserTest.recognitionResults2(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing'); 
   end
   
   clc
 end
-
 
 % currentUserTest.generateResultsJSON(responses);
 
