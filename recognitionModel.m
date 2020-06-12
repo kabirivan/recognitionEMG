@@ -619,7 +619,7 @@ classdef recognitionModel
                         % Storing the predictions
                         count = count + 1;
                         predLabelSeq(1, count) = predictedLabelNN;                     
-                        vecTime(1, count) = startPoint+(windowLength/2);
+                        vecTime(1, count) = endPoint;
                         % Adding up the times
                         timeSeq(1, count) = t_acq + t_filt +...
                             t_featureExtraction + ...
