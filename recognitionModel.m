@@ -30,8 +30,7 @@ classdef recognitionModel
              
  
         end
-        
-        
+           
         
         
        function [X, Y] = getTotalXnYByUser(obj)
@@ -576,7 +575,7 @@ classdef recognitionModel
                         t_acq = toc(tStart);
                         % If the muscle contraction is fully contained in the window
                         % observation
-                        if idxStart ~= 1 && idxEnd ~= size(window_emg, 1)
+                        if idxStart ~= 1 && idxEnd ~= size(window_emg, 1) && (abs(idxEnd-idxStart) > 75)
                             % Computation of the envelope: rectification and filtering
                             tStart = tic;
                             window_emg = window_emg(idxStart:idxEnd, :);
@@ -620,7 +619,7 @@ classdef recognitionModel
                         % Storing the predictions
                         count = count + 1;
                         predLabelSeq(1, count) = predictedLabelNN;                     
-                        vecTime(1, count) =startPoint+(windowLength/2)+30;
+                        vecTime(1, count) = startPoint+(windowLength/2);
                         % Adding up the times
                         timeSeq(1, count) = t_acq + t_filt +...
                             t_featureExtraction + ...
