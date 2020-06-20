@@ -24,7 +24,7 @@ gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
 %% ======================= Model Configuration ===========================
 
-load options1.mat
+load options2.mat
 
 % This command makes possible the reproducibility of the results
 rng('default'); 
