@@ -627,7 +627,7 @@ classdef recognitionModel
                             t_threshNN;
 
                     end
-                    predicted_Y{class_i}{trial_j} = predLabelSeq;
+                    predicted_Y{class_i}{trial_j} = majority_vote(predLabelSeq,4,4);
                     time{class_i}{trial_j} = timeSeq;
                     vectorTimePoints{class_i}{trial_j} = vecTime;
                 end
