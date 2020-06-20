@@ -87,7 +87,7 @@ for user_i = 1:numFiles
       [predictedSeq,  timeClassif, vectorTime] = currentUserTest.classifyEMG_SegmentationNN(test_RawX, nnModel);
      
       % Pos-processing labels
-      predictedLabels = currentUserTest.posProcessLabels(predictedSeq);
+      [predictedLabels, timePos] = currentUserTest.posProcessLabels(predictedSeq);
       
       % Concatenating the predictions of all the users for computing the
       % errors

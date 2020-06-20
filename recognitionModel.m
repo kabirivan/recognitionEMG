@@ -638,7 +638,7 @@ classdef recognitionModel
      
 
         
-        function predictedLabels = posProcessLabels(obj,predictedSeq)
+        function [predictedLabels, time] = posProcessLabels(obj,predictedSeq)
         % This function post-processes the sequence of labels returned by a
         % classifier. Each row of predictedSeq{class_i}{example_j} is a sequence of 
         % labels predicted by a different classifier for the jth example belonging
@@ -647,6 +647,7 @@ classdef recognitionModel
         numClasses = length(predictedSeq);
         predictedLabels = [];
         actualLabels = [];
+        time = cell(1, numClasses);
         for class_i = 1:numClasses
             numTestingSamples_class_i = length(predictedSeq{class_i});
             finalPredictedLabels_class_i = [];
@@ -665,9 +666,9 @@ classdef recognitionModel
                     % label. Otherwise, the current label is not changed
                     cond = predictions(:, label_i) == predictions(:,label_i - 1);
                     postProcessedLabels(:, label_i)  = 1*(cond) + predictions(:, label_i).*(1 - cond);
-                    
+                    time{class_i}{sample_j}(:, label_i) = toc(tStart)/numClassifiers;
                 end
-                
+                time{class_i}{sample_j}(:, 1) = time{class_i}{sample_j}(:, 2);
 
                 % Final label of the test example predicted by each classifier
                 finalLabel = zeros(numClassifiers, 1);
