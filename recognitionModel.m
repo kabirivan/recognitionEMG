@@ -133,7 +133,7 @@ classdef recognitionModel
 
                     for ch = 1:8               
                         channel = sprintf('ch%d',ch); 
-                        EMG(:,ch) = emgSample.(channel);
+                        EMG(:,ch) = (emgSample.(channel))/128;
                     end
 
                 [samples, ~] = size(EMG);
