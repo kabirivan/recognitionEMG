@@ -89,12 +89,14 @@ for user_i = 1:numFiles
       % Pos-processing labels
       [predictedLabels, timePos] = currentUserTest.posProcessLabels(predictedSeq);
       
+      % Computing the time of processing
+      estimateTime = currentUserTest.computeTime(timeClassif, timePos);
       % Concatenating the predictions of all the users for computing the
       % errors
       
       %responses.userSet.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
       
-      responses.(user.userInfo.name) = currentUserTest.recognitionResults2(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing'); 
+      responses.(user.userInfo.name) = currentUserTest.recognitionResults2(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
   end
   
   clc

@@ -695,7 +695,24 @@ classdef recognitionModel
         end
         end
         
+       function totalTime = computeTime(obj, timeClassification, timePosprocessing)
+        % This function computes the total time of processing of each window
+        % observation. For this task, this function adds up all the times of
+        % processing of the different modules that compose a recognition model      
+            numclasses = length(timeClassification);
+            totalTime = [];
+            for class_i = 1:numclasses
+                timeC_class_i = timeClassification{class_i};
+                timeP_class_i = timePosprocessing{class_i};
+                numTimes_class_i = length(timeC_class_i);
+                for trial_j = 1:numTimes_class_i
+                    time_classification = timeC_class_i{trial_j};
+                    time_posprocessing = timeP_class_i{trial_j};
+                    totalTime{class_i}{trial_j}(1,:) = [time_classification + time_posprocessing];
+                end
+            end
         
+       end
       
         
         
