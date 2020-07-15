@@ -734,18 +734,18 @@ classdef recognitionModel
            for i_class = 1:numClasses
 
                 for i_sample = 1:kRep
-
+                    sample = sprintf('idx_%d',cont);
                     cont = cont + 1;
-                    response{cont,1}.class = categorical(code2gesture(res.class(cont)));
+                    response.class.(sample) = categorical(code2gesture(res.class(cont)));
                     tempo = res.vectorOfLabels{1,i_class}{1,kRep};
 
                     StrOut = repmat({'noGesture'},size(tempo)) ;
                     [tf, idx] =ismember(tempo, gesNum) ;
                     StrOut(tf) = gestures(idx(tf));
 
-                    response{cont,1}.vectorOfLabels = categorical(StrOut);
-                    response{cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response{cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
+                    response.vectorOfLabels.(sample) = categorical(StrOut);
+                    response.vectorOfTimePoints.(sample) = res.vectorOfTimePoints{1,i_class}{1,kRep};
+                    response.vectorOfProcessingTimes.(sample) = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
 
                 end
 

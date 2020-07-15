@@ -35,7 +35,7 @@ folderData = [userFolder 'JSON'];
 filesInFolder = dir(folderData);
 numFiles = length(filesInFolder);
 userProcessed = 0;
-%responses.userGroup = userFolder; 
+% responses.userGroup = userFolder; 
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
 for user_i = 1:numFiles
@@ -48,7 +48,7 @@ for user_i = 1:numFiles
      file = [folderData '/' filesInFolder(user_i).name];
      text = fileread(file);
      user = jsondecode(text);
-     fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-3);
+     fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
      close all;
     
     % Reading the training samples
@@ -79,7 +79,6 @@ for user_i = 1:numFiles
      %% Testing  
       % Reading the testing samples
       version = 'testing';
-      %responses.repGroup = version;
       currentUserTest = recognitionModel(user, version, gestures, options);  %%gestures 2 6
       test_RawX = currentUserTest.getTotalXnYByUser();
       
@@ -94,13 +93,13 @@ for user_i = 1:numFiles
       % Concatenating the predictions of all the users for computing the
       % errors
       
-      %responses.userSet.(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
+      responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
       
-      responses.(user.userInfo.name) = currentUserTest.recognitionResults2(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
+      %responses.(user.userInfo.name) = currentUserTest.recognitionResults2(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
   end
   
   clc
 end
 
-% currentUserTest.generateResultsJSON(responses);
+currentUserTest.generateResultsJSON(responses);
 
