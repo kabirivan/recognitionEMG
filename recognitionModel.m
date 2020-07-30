@@ -721,7 +721,7 @@ classdef recognitionModel
             user = obj.user;
             res.class = predictedLabels;
             res.vectorOfLabels = predictedSeq;
-            res.vectorOfProcessingTimes = timeClassif;
+            res.vectorOfProcessingTime = timeClassif;
             res.vectorOfTimePoints = vectorTime;
             kRep = 25;
             gestures = obj.gesture;
@@ -745,7 +745,7 @@ classdef recognitionModel
 
                     response.vectorOfLabels.(sample) = categorical(StrOut);
                     response.vectorOfTimePoints.(sample) = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.vectorOfProcessingTimes.(sample) = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
+                    response.vectorOfProcessingTime.(sample) = res.vectorOfProcessingTime{1,i_class}{1,kRep};
 
                 end
 
