@@ -30,7 +30,7 @@ load options.mat
 rng('default'); 
 
 %%
-userFolder = 'training';
+userFolder = 'testing';
 folderData = [userFolder 'JSON'];
 filesInFolder = dir(folderData);
 numFiles = length(filesInFolder);
@@ -45,7 +45,7 @@ for user_i = 1:numFiles
  %% Adquisition     
       
      userProcessed = userProcessed + 1;
-     file = [folderData '/' filesInFolder(user_i).name];
+     file = [folderData '/' filesInFolder(user_i).name '/' filesInFolder(user_i).name '.json'];
      text = fileread(file);
      user = jsondecode(text);
      fprintf('Processing data from user: %d / %d\n', userProcessed, numFiles-2);
