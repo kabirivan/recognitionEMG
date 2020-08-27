@@ -93,13 +93,13 @@ for user_i = 1:numFiles
       % Concatenating the predictions of all the users for computing the
       % errors
       
-      responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
+      %responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
       
-      %responses.(user.userInfo.name) = currentUserTest.recognitionResults2(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
+      responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults3(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
   end
   
   clc
 end
 
-currentUserTest.generateResultsJSON(responses);
+%currentUserTest.generateResultsJSON(responses);
 
