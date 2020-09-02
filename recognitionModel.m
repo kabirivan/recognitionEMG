@@ -1,6 +1,6 @@
 classdef recognitionModel
-    %UNTITLED12 Summary of this class goes here
-    %   Detailed explanation goes here
+    % Class for recognition of hand gestures
+    % (C) Copyright Xavier Aguas
     
     properties
         user

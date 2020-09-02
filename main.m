@@ -4,11 +4,12 @@ close all
 warning off all;
 
 % Xavier Aguas.
+% Jun 5, 2020
 % Artificial Intelligence and Computer Vision Research Lab
 % Escuela Politécnica Nacional, Quito - Ecuador
 % xavier.aguas@epn.edu.ec
-% Jun 5, 2020
-
+% (C) Copyright Xavier Aguas
+% Before using this code, please read the file instructions.pdf
 
 addpath('ReadDataset');
 addpath('Preprocessing');
@@ -17,7 +18,7 @@ addpath('DTW distance');
 addpath('TrainingModel');
 addpath('Feature extraction');
 
-addpath('libs'); % libreria de Jonathan
+addpath('libs'); 
 gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
 
