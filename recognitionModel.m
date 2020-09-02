@@ -575,7 +575,7 @@ classdef recognitionModel
                         t_acq = toc(tStart);
                         % If the muscle contraction is fully contained in the window
                         % observation
-                        if idxStart ~= 1 && idxEnd ~= size(window_emg, 1)  && (abs(idxEnd-idxStart) > 125)
+                        if idxStart ~= 1 && idxEnd ~= size(window_emg, 1)  && (abs(idxEnd-idxStart) > 90)
                             % Computation of the envelope: rectification and filtering
                             tStart = tic;
                             window_emg = window_emg(idxStart:idxEnd, :);
@@ -627,7 +627,7 @@ classdef recognitionModel
                             t_threshNN;
 
                     end
-                    predicted_Y{class_i}{trial_j} = majority_vote(predLabelSeq,4,4);
+                    predicted_Y{class_i}{trial_j} = majority_vote(predLabelSeq,6,6);
                     time{class_i}{trial_j} = timeSeq;
                     vectorTimePoints{class_i}{trial_j} = vecTime;
                 end
