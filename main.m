@@ -19,7 +19,7 @@ addpath('TrainingModel');
 addpath('Feature extraction');
 
 addpath('libs'); 
-gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
+gestures = {'noGesture', 'fist', 'waveIn', 'waveOut', 'open', 'pinch'};
 
 
 
@@ -31,7 +31,7 @@ load options.mat
 rng('default'); 
 
 %%
-userFolder = 'testing';
+userFolder = 'training';
 folderData = [userFolder 'JSON'];
 filesInFolder = dir(folderData);
 numFiles = length(filesInFolder);
@@ -96,7 +96,9 @@ for user_i = 1:numFiles
       
       %responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
       
-      responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults3(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
+      response1.(version).(user.userInfo.name) = currentUserTest.recognitionResults3(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
+      response2.(version).(user.userInfo.name) = currentUserTest.recognitionResults4(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
+      
   end
   
   clc
