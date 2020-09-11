@@ -737,135 +737,15 @@ classdef recognitionModel
                     sample = sprintf('idx_%d',cont);
                     cont = cont + 1;
                     response.class.(sample) = categorical(code2gesture(res.class(cont)));
-                    tempo = res.vectorOfLabels{1,i_class}{1,kRep};
+                    tempo = res.vectorOfLabels{1,i_class}{1,i_sample};
 
                     StrOut = repmat({'noGesture'},size(tempo)) ;
                     [tf, idx] =ismember(tempo, gesNum) ;
                     StrOut(tf) = gestures(idx(tf));
 
                     response.vectorOfLabels.(sample) = categorical(StrOut);
-                    response.vectorOfTimePoints.(sample) = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.vectorOfProcessingTime.(sample) = res.vectorOfProcessingTime{1,i_class}{1,kRep};
-
-                end
-
-            end   
-         
-           
-        end
-        
-        
-        
-       function response = recognitionResults2(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
-            
-            user = obj.user;
-            res.class = predictedLabels;
-            res.vectorOfLabels = predictedSeq;
-            res.vectorOfProcessingTimes = timeClassif;
-            res.vectorOfTimePoints = vectorTime;
-            kRep = 25;
-            gestures = obj.gesture;
-            gesNum = [1 5 2 3 4 6];
-            numClasses = length(gestures);
-            cont = 0;
-            
-
-            
-           for i_class = 1:numClasses
-
-                for i_sample = 1:kRep
-
-                    cont = cont + 1;
-                    response.testing{cont,1}.class = categorical(code2gesture(res.class(cont)));
-                    tempo = res.vectorOfLabels{1,i_class}{1,kRep};
-
-                    StrOut = repmat({'noGesture'},size(tempo)) ;
-                    [tf, idx] =ismember(tempo, gesNum) ;
-                    StrOut(tf) = gestures(idx(tf));
-
-                    response.testing{cont,1}.vectorOfLabels = categorical(StrOut);
-                    response.testing{cont,1}.vectorOfTimePoints = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.testing{cont,1}.vectorOfProcessingTimes = res.vectorOfProcessingTimes{1,i_class}{1,kRep};
-
-                end
-
-            end   
-         
-           
-       end
-
-        
-    function response = recognitionResults3(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
-            
-            user = obj.user;
-            res.class = predictedLabels;
-            res.vectorOfLabels = predictedSeq;
-            res.vectorOfProcessingTime = timeClassif;
-            res.vectorOfTimePoints = vectorTime;
-            kRep = 25;
-            gestures = obj.gesture;
-            gesNum = [1 2 3 4 5 6];
-            numClasses = length(gestures);
-            cont = 0;
-            
-
-            
-           for i_class = 1:numClasses
-
-                for i_sample = 1:kRep
-                    %sample = sprintf('idx_%d',cont);
-                    cont = cont + 1;
-                    response.class{cont,1} = categorical(code2gesture(res.class(cont)));
-                    tempo = res.vectorOfLabels{1,i_class}{1,kRep};
-
-                    StrOut = repmat({'noGesture'},size(tempo)) ;
-                    [tf, idx] =ismember(tempo, gesNum) ;
-                    StrOut(tf) = gestures(idx(tf));
-
-                    response.vectorOfLabels{cont,1} = categorical(StrOut);
-                    response.vectorOfTimePoints{cont,1} = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.vectorOfProcessingTime{cont,1} = res.vectorOfProcessingTime{1,i_class}{1,kRep};
-
-                end
-
-            end   
-         
-           
-    end
-        
-        
-        
-    function response = recognitionResults4(obj,predictedLabels,predictedSeq,timeClassif,vectorTime,typeUser)
-            
-            user = obj.user;
-            res.class = predictedLabels;
-            res.vectorOfLabels = predictedSeq;
-            res.vectorOfProcessingTime = timeClassif;
-            res.vectorOfTimePoints = vectorTime;
-            kRep = 25;
-            gestures = obj.gesture;
-            gesNum = [1 2 3 4 5 6];
-            numClasses = length(gestures);
-            cont = 0;
-            
-
-            
-           for i_class = 1:numClasses
-
-                for i_sample = 1:kRep
-                    %sample = sprintf('idx_%d',cont);
-                    cont = cont + 1;
-                    response.class{cont,1} = categorical(code2gesture(res.class(cont)));
-                    tempo = res.vectorOfLabels{1,i_class}{1,kRep};
-
-                    C = {'noGesture', 'fist', 'waveIn', 'waveOut', 'open', 'pinch'};
-                    S = string(C);
-                    Y3 = S(tempo);
-
-                    
-                    response.vectorOfLabels{cont,1} = categorical(Y3);
-                    response.vectorOfTimePoints{cont,1} = res.vectorOfTimePoints{1,i_class}{1,kRep};
-                    response.vectorOfProcessingTime{cont,1} = res.vectorOfProcessingTime{1,i_class}{1,kRep};
+                    response.vectorOfTimePoints.(sample) = res.vectorOfTimePoints{1,i_class}{1,i_sample};
+                    response.vectorOfProcessingTime.(sample) = res.vectorOfProcessingTime{1,i_class}{1,i_sample};
 
                 end
 

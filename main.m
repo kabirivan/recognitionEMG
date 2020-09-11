@@ -31,13 +31,12 @@ load options.mat
 rng('default'); 
 
 %%
-userFolder = 'training';
+userFolder = 'testing';
 folderData = [userFolder 'JSON'];
 filesInFolder = dir(folderData);
 numFiles = length(filesInFolder);
 userProcessed = 0;
 % responses.userGroup = userFolder; 
-gestures = {'noGesture', 'open', 'fist', 'waveIn', 'waveOut', 'pinch'};
 
 for user_i = 1:numFiles
     
@@ -94,15 +93,14 @@ for user_i = 1:numFiles
       % Concatenating the predictions of all the users for computing the
       % errors
       
-      %responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
+      responses.(version).(user.userInfo.name) = currentUserTest.recognitionResults(predictedLabels,predictedSeq,timeClassif,vectorTime,'testing');   
       
-      response1.(version).(user.userInfo.name) = currentUserTest.recognitionResults3(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
-      response2.(version).(user.userInfo.name) = currentUserTest.recognitionResults4(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
+      %response.(version).(user.userInfo.name) = currentUserTest.recognitionResults4(predictedLabels,predictedSeq,estimateTime,vectorTime,'testing'); 
       
   end
   
-  clc
+  %clc
 end
 
-%currentUserTest.generateResultsJSON(responses);
+currentUserTest.generateResultsJSON(responses);
 
